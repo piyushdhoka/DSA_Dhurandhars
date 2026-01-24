@@ -15,6 +15,11 @@ interface LeaderboardEntry {
     todayPoints: number;
     totalScore: number;
     totalProblems: number;
+    avatar?: string;
+    country?: string;
+    streak?: number;
+    lastSubmission?: string;
+    recentProblems?: string[];
     rank: number;
 }
 
@@ -30,6 +35,20 @@ const MOTIVATIONAL_ROASTS = [
 
 function getRandomRoast() {
     return MOTIVATIONAL_ROASTS[Math.floor(Math.random() * MOTIVATIONAL_ROASTS.length)];
+}
+
+function getTimeAgo(timestamp: string | null | undefined): string {
+    if (!timestamp) return 'Never';
+    const now = Date.now();
+    const then = parseInt(timestamp) * 1000;
+    const diff = now - then;
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    
+    if (hours < 1) return 'Just now';
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+    return 'Long ago';
 }
 
 export default function HomePage() {
@@ -208,15 +227,17 @@ export default function HomePage() {
                         <>
                             {/* Header Row */}
                             <div className="px-8 py-3 flex items-center gap-6 bg-gray-50/50 border-b border-gray-100">
-                                <div className="w-8 flex-shrink-0"></div>
                                 <div className="flex-1 min-w-0">
                                     <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Name</span>
                                 </div>
-                                <div className="flex gap-8 items-center">
-                                    <div className="text-right w-16">
+                                <div className="flex gap-12 items-center">
+                                    <div className="text-center w-20">
+                                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Streak</span>
+                                    </div>
+                                    <div className="text-right w-20">
                                         <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total</span>
                                     </div>
-                                    <div className="text-right w-16">
+                                    <div className="text-right w-20">
                                         <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Today</span>
                                     </div>
                                 </div>
@@ -227,35 +248,60 @@ export default function HomePage() {
                                 {leaderboard.map((entry, index) => (
                                     <div 
                                         key={entry.id} 
-                                        className={`px-8 py-5 flex items-center gap-6 transition-colors hover:bg-gray-50 ${
-                                            entry.email === user.email ? 'bg-blue-50/40' : ''
+                                        className={`px-8 py-4 flex items-center gap-6 transition-colors hover:bg-gray-50 ${
+                                            entry.email === user.email ? 'bg-blue-50/30' : ''
                                         }`}
                                     >
-                                        <div className={`
-                                            w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0
-                                            ${index === 0 ? 'bg-yellow-100 text-yellow-700' : 
-                                              index === 1 ? 'bg-gray-100 text-gray-600' :
-                                              index === 2 ? 'bg-orange-100 text-orange-700' :
-                                              'text-gray-400'}
-                                        `}>
-                                            {entry.rank}
+                                        {/* Avatar */}
+                                        <div className="w-11 h-11 rounded-full overflow-hidden bg-gray-100 flex-shrink-0 border border-gray-200">
+                                            {entry.avatar ? (
+                                                <img src={entry.avatar} alt={entry.name} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-gray-500 text-base font-semibold">
+                                                    {entry.name.charAt(0).toUpperCase()}
+                                                </div>
+                                            )}
                                         </div>
                                         
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2">
-                                                <p className="font-medium text-gray-900 truncate">{entry.name}</p>
+                                                <a 
+                                                    href={`https://leetcode.com/${entry.leetcodeUsername}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="font-medium text-gray-900 hover:text-blue-600 transition-colors truncate"
+                                                >
+                                                    {entry.name}
+                                                </a>
                                                 {entry.email === user.email && (
                                                     <span className="text-[10px] font-bold tracking-wide text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full uppercase">You</span>
                                                 )}
                                             </div>
-                                            <p className="text-sm text-gray-500 font-normal truncate">@{entry.leetcodeUsername}</p>
+                                            <div className="flex items-center gap-2 text-sm text-gray-500 mt-0.5">
+                                                <span className="font-normal truncate">@{entry.leetcodeUsername}</span>
+                                                {entry.country && (
+                                                    <span className="text-xs text-gray-400">• {entry.country}</span>
+                                                )}
+                                                {entry.lastSubmission && (
+                                                    <span className="text-xs text-gray-400">• {getTimeAgo(entry.lastSubmission)}</span>
+                                                )}
+                                            </div>
                                         </div>
                                         
-                                        <div className="flex gap-8 items-center">
-                                            <div className="text-right w-16">
+                                        <div className="flex gap-12 items-center">
+                                            <div className="text-center w-20">
+                                                {entry.streak && entry.streak > 0 ? (
+                                                    <span className="text-base font-medium text-orange-600 flex items-center justify-center gap-1">
+                                                        🔥 {entry.streak}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-gray-300">—</span>
+                                                )}
+                                            </div>
+                                            <div className="text-right w-20">
                                                 <span className="text-lg font-semibold text-gray-900">{entry.totalScore}</span>
                                             </div>
-                                            <div className="text-right w-16">
+                                            <div className="text-right w-20">
                                                 <span className="text-lg font-medium text-blue-600">{entry.todayPoints}</span>
                                             </div>
                                         </div>

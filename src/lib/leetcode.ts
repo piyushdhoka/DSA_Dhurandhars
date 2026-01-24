@@ -3,6 +3,47 @@ import { DailyStat } from '@/models/DailyStat';
 
 const LEETCODE_GRAPHQL = 'https://leetcode.com/graphql';
 
+// Calculate current streak from submission calendar
+function calculateStreak(calendarData: string): number {
+  if (!calendarData) return 0;
+  
+  try {
+    const calendar = JSON.parse(calendarData);
+    const timestamps = Object.keys(calendar).map(Number).sort((a, b) => b - a);
+    
+    if (timestamps.length === 0) return 0;
+    
+    let streak = 0;
+    const oneDayInSeconds = 86400;
+    const now = Math.floor(Date.now() / 1000);
+    const todayStart = now - (now % oneDayInSeconds);
+    
+    // Check if solved today or yesterday (to account for timezone)
+    const mostRecent = timestamps[0];
+    if (mostRecent < todayStart - oneDayInSeconds) return 0;
+    
+    let currentDay = todayStart;
+    
+    for (const timestamp of timestamps) {
+      const dayStart = timestamp - (timestamp % oneDayInSeconds);
+      
+      if (dayStart === currentDay || dayStart === currentDay - oneDayInSeconds) {
+        if (dayStart < currentDay) {
+          streak++;
+          currentDay = dayStart;
+        }
+      } else {
+        break;
+      }
+    }
+    
+    return streak;
+  } catch (error) {
+    console.error('Error calculating streak:', error);
+    return 0;
+  }
+}
+
 async function fetchLeetCodeUser(username: string) {
   const query = `
     query getUserProfile($username: String!) {
@@ -10,12 +51,21 @@ async function fetchLeetCodeUser(username: string) {
         username
         profile {
           ranking
+          userAvatar
+          countryName
         }
         submitStatsGlobal {
           acSubmissionNum {
             difficulty
             count
           }
+        }
+        submissionCalendar
+        recentAcSubmissionList(limit: 5) {
+          id
+          title
+          titleSlug
+          timestamp
         }
       }
     }
@@ -54,6 +104,16 @@ export async function fetchLeetCodeStats(username: string) {
     const hard = acNum.find((s: any) => s.difficulty === 'Hard')?.count || 0;
     const total = acNum.find((s: any) => s.difficulty === 'All')?.count || 0;
     const ranking = userStats.matchedUser.profile?.ranking || 0;
+    const avatar = userStats.matchedUser.profile?.userAvatar || '';
+    const country = userStats.matchedUser.profile?.countryName || '';
+    const recentSubmissions = userStats.matchedUser.recentAcSubmissionList || [];
+    
+    // Calculate streak from submission calendar
+    const calendar = userStats.matchedUser.submissionCalendar;
+    const streak = calculateStreak(calendar);
+    
+    // Get last submission timestamp
+    const lastSubmission = recentSubmissions.length > 0 ? recentSubmissions[0].timestamp : null;
 
     return {
       easy,
@@ -61,6 +121,15 @@ export async function fetchLeetCodeStats(username: string) {
       hard,
       total,
       ranking,
+      avatar,
+      country,
+      recentSubmissions: recentSubmissions.map((s: any) => ({
+        title: s.title,
+        titleSlug: s.titleSlug,
+        timestamp: s.timestamp,
+      })),
+      streak,
+      lastSubmission,
     };
   } catch (error) {
     console.error(`Error fetching LeetCode stats for ${username}:`, error);
@@ -104,7 +173,16 @@ export async function updateDailyStatsForUser(userId: string, leetcodeUsername: 
   todayPoints = Math.max(0, todayPoints);
 
   const update = {
-    ...stats,
+    easy: stats.easy,
+    medium: stats.medium,
+    hard: stats.hard,
+    total: stats.total,
+    ranking: stats.ranking,
+    avatar: stats.avatar,
+    country: stats.country,
+    streak: stats.streak,
+    lastSubmission: stats.lastSubmission,
+    recentProblems: stats.recentSubmissions.map((s: any) => s.title),
     previousTotal: todayStat ? previousTotal : stats.total, // Keep original baseline
     todayPoints,
   };

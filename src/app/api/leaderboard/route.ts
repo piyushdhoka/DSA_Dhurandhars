@@ -28,6 +28,11 @@ export async function GET() {
         totalScore: totalScore,
         totalProblems: latestStat?.total || 0,
         ranking: latestStat?.ranking || 0,
+        avatar: latestStat?.avatar || '',
+        country: latestStat?.country || '',
+        streak: latestStat?.streak || 0,
+        lastSubmission: latestStat?.lastSubmission || null,
+        recentProblems: latestStat?.recentProblems || [],
         lastUpdated: latestStat?.date || null,
         rank: 0,
       });
