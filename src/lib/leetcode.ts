@@ -82,19 +82,18 @@ export async function updateDailyStatsForUser(userId: string, leetcodeUsername: 
     date: { $lt: today }
   }).sort({ date: -1 });
 
-  // Calculate today's points
-  // Points = new problems solved since last record (1 point per problem, any difficulty)
+  // Calculate today's points with weighted scoring
+  // Easy = 1 point, Medium = 3 points, Hard = 6 points
   let todayPoints = 0;
   let previousTotal = 0;
 
-  if (todayStat) {
-    // If we already have a today record, calculate new points since last update
-    previousTotal = todayStat.previousTotal;
-    todayPoints = stats.total - previousTotal;
-  } else if (lastStat) {
-    // First entry for today, use yesterday's total as baseline
+  if (lastStat) {
+    // Calculate points based on new problems solved since last stat
+    const newEasy = Math.max(0, stats.easy - lastStat.easy);
+    const newMedium = Math.max(0, stats.medium - lastStat.medium);
+    const newHard = Math.max(0, stats.hard - lastStat.hard);
+    todayPoints = newEasy * 1 + newMedium * 3 + newHard * 6;
     previousTotal = lastStat.total;
-    todayPoints = stats.total - previousTotal;
   } else {
     // First ever entry for this user, no points yet
     previousTotal = stats.total;

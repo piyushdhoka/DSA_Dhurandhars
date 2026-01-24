@@ -16,12 +16,16 @@ export async function GET() {
       // Get latest stat for total problems
       const latestStat = await DailyStat.findOne({ userId: user._id }).sort({ date: -1 });
 
+      // Calculate total score: easy=1, medium=3, hard=6
+      const totalScore = (latestStat?.easy || 0) * 1 + (latestStat?.medium || 0) * 3 + (latestStat?.hard || 0) * 6;
+
       leaderboard.push({
         id: user._id,
         name: user.name,
         email: user.email,
         leetcodeUsername: user.leetcodeUsername,
         todayPoints: todayStat?.todayPoints || 0,
+        totalScore: totalScore,
         totalProblems: latestStat?.total || 0,
         ranking: latestStat?.ranking || 0,
         lastUpdated: latestStat?.date || null,
@@ -29,8 +33,8 @@ export async function GET() {
       });
     }
 
-    // Sort by today's points (descending)
-    leaderboard.sort((a, b) => b.todayPoints - a.todayPoints);
+    // Sort by total score (descending), then by today's points
+    leaderboard.sort((a, b) => b.totalScore - a.totalScore || b.todayPoints - a.todayPoints);
 
     // Add rank
     leaderboard.forEach((entry, index) => {

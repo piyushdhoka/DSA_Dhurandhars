@@ -13,6 +13,7 @@ interface LeaderboardEntry {
     email: string;
     leetcodeUsername: string;
     todayPoints: number;
+    totalScore: number;
     totalProblems: number;
     rank: number;
 }
@@ -204,41 +205,64 @@ export default function HomePage() {
                             <p>No data available yet.</p>
                         </div>
                     ) : (
-                        <div className="divide-y divide-gray-100">
-                            {leaderboard.map((entry, index) => (
-                                <div 
-                                    key={entry.id} 
-                                    className={`px-8 py-5 flex items-center gap-6 transition-colors hover:bg-gray-50 ${
-                                        entry.email === user.email ? 'bg-blue-50/40' : ''
-                                    }`}
-                                >
-                                    <div className={`
-                                        w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0
-                                        ${index === 0 ? 'bg-yellow-100 text-yellow-700' : 
-                                          index === 1 ? 'bg-gray-100 text-gray-600' :
-                                          index === 2 ? 'bg-orange-100 text-orange-700' :
-                                          'text-gray-400'}
-                                    `}>
-                                        {entry.rank}
+                        <>
+                            {/* Header Row */}
+                            <div className="px-8 py-3 flex items-center gap-6 bg-gray-50/50 border-b border-gray-100">
+                                <div className="w-8 flex-shrink-0"></div>
+                                <div className="flex-1 min-w-0">
+                                    <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Name</span>
+                                </div>
+                                <div className="flex gap-8 items-center">
+                                    <div className="text-right w-16">
+                                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total</span>
                                     </div>
-                                    
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2">
-                                            <p className="font-medium text-gray-900 truncate">{entry.name}</p>
-                                            {entry.email === user.email && (
-                                                <span className="text-[10px] font-bold tracking-wide text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full uppercase">You</span>
-                                            )}
-                                        </div>
-                                        <p className="text-sm text-gray-500 font-normal truncate">@{entry.leetcodeUsername}</p>
-                                    </div>
-                                    
-                                    <div className="text-right">
-                                        <span className="block text-lg font-medium text-gray-900">{entry.todayPoints}</span>
-                                        <span className="text-xs text-gray-400">points</span>
+                                    <div className="text-right w-16">
+                                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Today</span>
                                     </div>
                                 </div>
-                            ))}
-                        </div>
+                            </div>
+                            
+                            {/* Data Rows */}
+                            <div className="divide-y divide-gray-100">
+                                {leaderboard.map((entry, index) => (
+                                    <div 
+                                        key={entry.id} 
+                                        className={`px-8 py-5 flex items-center gap-6 transition-colors hover:bg-gray-50 ${
+                                            entry.email === user.email ? 'bg-blue-50/40' : ''
+                                        }`}
+                                    >
+                                        <div className={`
+                                            w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0
+                                            ${index === 0 ? 'bg-yellow-100 text-yellow-700' : 
+                                              index === 1 ? 'bg-gray-100 text-gray-600' :
+                                              index === 2 ? 'bg-orange-100 text-orange-700' :
+                                              'text-gray-400'}
+                                        `}>
+                                            {entry.rank}
+                                        </div>
+                                        
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2">
+                                                <p className="font-medium text-gray-900 truncate">{entry.name}</p>
+                                                {entry.email === user.email && (
+                                                    <span className="text-[10px] font-bold tracking-wide text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full uppercase">You</span>
+                                                )}
+                                            </div>
+                                            <p className="text-sm text-gray-500 font-normal truncate">@{entry.leetcodeUsername}</p>
+                                        </div>
+                                        
+                                        <div className="flex gap-8 items-center">
+                                            <div className="text-right w-16">
+                                                <span className="text-lg font-semibold text-gray-900">{entry.totalScore}</span>
+                                            </div>
+                                            <div className="text-right w-16">
+                                                <span className="text-lg font-medium text-blue-600">{entry.todayPoints}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </>
                     )}
                 </div>
             </main>
