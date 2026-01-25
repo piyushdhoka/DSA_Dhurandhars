@@ -1,124 +1,39 @@
 import { NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import { MessageTemplate } from '@/models/MessageTemplate';
 
-// Simple admin check
-function isAdmin(user: any): boolean {
-  const adminEmails = [
-    'admin@dsagrinders.com',
-  ];
-  
-  return adminEmails.includes(user.email.toLowerCase()) || 
-         user.email.toLowerCase().includes('admin');
-}
-
-// Default templates
+// Default templates - Minimalist for initialization
 const defaultTemplates = [
   {
     type: 'whatsapp_roast',
-    name: 'Daily WhatsApp Roast',
-    content: `🔥 *WAKE UP CALL FOR {userName}* 🔥
-
-*REALITY CHECK:*
-{roast}
-
-*HARSH TRUTH:* {insult}
-
-Listen up *{userName}*! 👂
-
-While you're scrolling through WhatsApp, your competition is grinding LeetCode problems and getting closer to their dream jobs! 💼
-
-⏰ *STOP MAKING EXCUSES!*
-⏰ *STOP PROCRASTINATING!*
-⏰ *START CODING NOW!*
-
-🎯 *TODAY'S MISSION:*
-• Solve at least 2 problems
-• Focus on Medium difficulty
-• Stop checking social media every 5 minutes!
-
-🚀 *GET TO WORK:* https://leetcode.com/problemset/
-
-*REMEMBER:* Every minute you waste is a minute your competition gets ahead! 
-
-*NO EXCUSES. NO SHORTCUTS. JUST GRIND!* 💪
-
----
-DSA Grinders - Where weak coders become strong! 💀`,
+    name: 'Daily Roast',
+    content: `🔥 *Oye {userName}!* 🔥\n\n{roast}\n\n*Reality Check:* {insult}\n\n💻 LeetCode: https://leetcode.com/problemset/\n🌐 Website: https://dsa-grinders.vercel.app\n\nPadh le bhai, mauka hai! 🚀\n---\nDSA Dhurandhars 💀`,
     variables: ['userName', 'roast', 'insult'],
     isActive: true
   },
   {
     type: 'email_roast',
-    name: 'Daily Email Roast',
-    subject: 'Daily Reality Check - Time to Grind DSA',
-    content: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 16px;">
-  <h1 style="color: #ff4444; text-align: center; font-size: 32px; margin-bottom: 10px;">
-    DSA GRINDERS
-  </h1>
-  <p style="color: #888; text-align: center; font-size: 14px; margin-bottom: 20px;">
-    Daily Reality Check for Aspiring Developers
-  </p>
-  
-  <div style="background: rgba(255,80,80,0.15); border: 2px solid rgba(255,80,80,0.4); border-radius: 12px; padding: 24px; margin-bottom: 20px;">
-    <h2 style="color: #ff6b6b; text-align: center; font-size: 24px; margin: 0 0 10px 0;">
-      WAKE UP CALL FOR {userName}
-    </h2>
-    <p style="color: #ff9999; text-align: center; font-size: 18px; margin: 0; font-weight: bold;">
-      {roast}
-    </p>
-  </div>
-  
-  <div style="background: rgba(255,165,0,0.1); border: 1px solid rgba(255,165,0,0.3); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-    <p style="color: #ffa500; text-align: center; font-size: 16px; margin: 0;">
-      Harsh Truth: {insult}
-    </p>
-  </div>
-  
-  <p style="color: #e0e0e0; font-size: 16px; text-align: center; line-height: 1.6;">
-    Hey <strong style="color: #00d4ff;">{userName}</strong>!<br><br>
-    Your competitors are grinding LeetCode right now<br>
-    and you're here reading emails?<br><br>
-    <strong style="color: #ff6b6b;">Solve one problem first, then do other stuff!</strong>
-  </p>
-  
-  <div style="text-align: center; margin-top: 24px;">
-    <a href="https://leetcode.com/problemset/" style="display: inline-block; background: linear-gradient(135deg, #ff4444 0%, #ff6b6b 100%); color: #fff; padding: 16px 40px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 18px; text-transform: uppercase;">
-      OPEN LEETCODE NOW
-    </a>
-  </div>
-  
-  <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 16px; margin-top: 24px; text-align: center;">
-    <p style="color: #ff4444; font-size: 20px; margin: 0; font-weight: bold;">
-      LEARN DSA OR YOU WON'T GET A JOB!
-    </p>
-  </div>
-  
-  <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
-    <p style="color: #666; font-size: 11px; text-align: center;">
-      You're getting this roast because you joined DSA Grinders.<br>
-      Now deal with it! No unsubscribe option for the weak!
-    </p>
-  </div>
+    name: 'Daily Roast Email',
+    subject: 'Reality Check for {userName} 🤡',
+    content: `<div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 20px auto; padding: 30px; border: 1px solid #eee; border-radius: 10px; color: #333;">
+  <h2 style="color: #d32f2f; margin-top: 0;">Daily Reality Check, {userName} 🤡</h2>
+  <p style="font-size: 18px; line-height: 1.5; background: #fff5f5; padding: 15px; border-left: 5px solid #ff5252; border-radius: 4px;">"{roast}"</p>
+  <p style="color: #666; font-style: italic; margin-bottom: 25px;"><strong>Harsh Truth:</strong> {insult}</p>
+  <p style="margin-bottom: 25px;">Your rivals are currently solving Hard problems on LeetCode while you're reading this. It's time to stop being a slacker and get to work.</p>
+  <div style="text-align: center; margin: 35px 0;"><a href="https://leetcode.com/problemset/" style="background-color: #212121; color: white; padding: 14px 28px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Solve Problems Now</a></div>
+  <hr style="border: 0; border-top: 1px solid #eee; margin: 25px 0;">
+  <p style="font-size: 12px; color: #999; text-align: center;">Check your progress: <a href="https://dsa-grinders.vercel.app" style="color: #d32f2f; text-decoration: none;">dsa-grinders.vercel.app</a><br>Keep grinding. Or don't. See if we care.</p>
 </div>`,
     variables: ['userName', 'roast', 'insult'],
     isActive: true
   }
 ];
 
-export const POST = requireAuth(async (req, user) => {
+export const POST = requireAdmin(async (req) => {
   try {
-    // Check if user is admin
-    if (!isAdmin(user)) {
-      return NextResponse.json(
-        { error: 'Access denied. Admin privileges required.' },
-        { status: 403 }
-      );
-    }
-
     await dbConnect();
-    
+
     // Check if templates already exist
     const existingTemplates = await MessageTemplate.find({
       type: { $in: ['whatsapp_roast', 'email_roast'] }
@@ -135,18 +50,10 @@ export const POST = requireAuth(async (req, user) => {
     // Create default templates
     const createdTemplates = await MessageTemplate.insertMany(defaultTemplates);
 
-    console.log(`Admin ${user.name} initialized default templates`);
-
     return NextResponse.json({
       success: true,
       message: 'Default templates created successfully',
-      created: createdTemplates.length,
-      templates: createdTemplates.map(t => ({
-        id: t._id,
-        type: t.type,
-        name: t.name,
-        isActive: t.isActive
-      }))
+      created: createdTemplates.length
     });
 
   } catch (error: any) {
