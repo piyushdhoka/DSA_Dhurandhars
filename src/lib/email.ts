@@ -53,7 +53,7 @@ export async function sendDSAReminder(toEmail: string, userName: string) {
         </div>
         
         <p style="font-size: 14px; color: #888;">
-          Website: <a href="https://dsa-dhurandhars.vercel.app" style="color: #0070f3;">dsa-dhurandhars.vercel.app</a>
+          Website: <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://dsa-grinders.vercel.app'}" style="color: #0070f3;">${(process.env.NEXT_PUBLIC_SITE_URL || 'https://dsa-grinders.vercel.app').replace('https://', '')}</a>
         </p>
         
         <p style="font-size: 12px; color: #aaa; margin-top: 30px;">

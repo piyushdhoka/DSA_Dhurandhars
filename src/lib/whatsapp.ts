@@ -1,8 +1,8 @@
 const WHATSAPP_API_URL = 'https://rpayconnect.com/api/send-text';
 
 export async function sendDSAWhatsAppReminder(phoneNumber: string, userName: string) {
-  // Simple message with LeetCode and Website links
-  const message = `🔥 *Oye ${userName}!* 🔥\n\nIt's time to grind some DSA problems!\n\n💻 LeetCode: https://leetcode.com/problemset/\n🌐 Website: https://dsa-grinders.vercel.app\n\nPadh le bhai, mauka hai! 🚀`;
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://dsa-grinders.vercel.app';
+  const message = `🔥 *Oye ${userName}!* 🔥\n\nIt's time to grind some DSA problems!\n\n💻 LeetCode: https://leetcode.com/problemset/\n🌐 Website: ${baseUrl}\n\nPadh le bhai, mauka hai! 🚀`;
 
   const apiKey = process.env.RPAY_API_KEY;
 
