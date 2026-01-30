@@ -1,23 +1,15 @@
+import path from 'path';
 import { NextResponse } from 'next/server';
 import { db } from '@/db/drizzle';
-import { users, messageTemplates, settings } from '@/db/schema';
-import { eq, ne, and, lt, lte, or, desc, notLike } from 'drizzle-orm';
+import { users, settings, User, Setting } from '@/db/schema';
+import { eq, ne, and, notLike } from 'drizzle-orm';
 import { updateDailyStatsForUser } from '@/lib/leetcode';
 import { sendWhatsAppMessage } from '@/lib/whatsapp';
-import nodemailer from 'nodemailer';
-
-// Email transporter
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.SMTP_EMAIL,
-    pass: process.env.SMTP_PASSWORD,
-  },
-});
-
+import { getEmailTransporter } from '@/lib/emailTransporter';
+import { getWhatsAppMessage, getEmailHTML, getEmailSubject } from '@/config/messages';
 
 // Helper function to check if today should be skipped
-function shouldSkipToday(s: any): boolean {
+function shouldSkipToday(s: Setting): boolean {
   const now = new Date();
   const dayOfWeek = now.getDay(); // 0 = Sunday, 6 = Saturday
 
@@ -39,7 +31,7 @@ function shouldSkipToday(s: any): boolean {
 }
 
 // Helper function to reset daily counters if needed
-async function resetDailyCountersIfNeeded(s: any): Promise<any> {
+async function resetDailyCountersIfNeeded(s: Setting): Promise<Setting> {
   const now = new Date();
   const lastReset = s.lastResetDate ? new Date(s.lastResetDate) : new Date(0);
 
@@ -61,15 +53,8 @@ async function resetDailyCountersIfNeeded(s: any): Promise<any> {
 
 // Helper function to check if current time matches any scheduled time
 function isTimeToSend(scheduledTimes: string[] | undefined, timezone: string = 'Asia/Kolkata', devMode: boolean = false): boolean {
-  // In development mode, always return true for testing
-  if (devMode) {
-    return true;
-  }
-
-  // Handle undefined or empty schedules
-  if (!scheduledTimes || scheduledTimes.length === 0) {
-    return false;
-  }
+  if (devMode) return true;
+  if (!scheduledTimes || scheduledTimes.length === 0) return false;
 
   const now = new Date();
   const currentTime = now.toLocaleTimeString('en-IN', {
@@ -82,64 +67,77 @@ function isTimeToSend(scheduledTimes: string[] | undefined, timezone: string = '
   const [currentHour, currentMinute] = currentTime.split(':').map(Number);
   const currentMinutes = currentHour * 60 + currentMinute;
 
-  // Check if current time is within 15 minutes of any scheduled time
   return scheduledTimes.some(scheduledTime => {
     const [scheduledHour, scheduledMinute] = scheduledTime.split(':').map(Number);
     const scheduledMinutes = scheduledHour * 60 + scheduledMinute;
-
-    const timeDiff = Math.abs(currentMinutes - scheduledMinutes);
-    return timeDiff <= 15;
+    return Math.abs(currentMinutes - scheduledMinutes) <= 15;
   });
 }
 
-// Replace template variables with actual values
-function replaceTemplateVariables(content: string, user: any, roast: string = '', insult: string = ''): string {
-  return content
-    .replace(/\{userName\}/g, user.name)
-    .replace(/\{email\}/g, user.email)
-    .replace(/\{leetcodeUsername\}/g, user.leetcodeUsername)
-    .replace(/\{roast\}/g, roast)
-    .replace(/\{insult\}/g, insult);
-}
-
-async function sendTemplatedEmail(user: any, template: any, roast: string, insult: string) {
-  const subject = replaceTemplateVariables(template.subject || 'DSA Grinders - Daily Reminder', user, roast, insult);
-  const content = replaceTemplateVariables(template.content, user, roast, insult);
+// Send email using config template
+async function sendConfigEmail(user: User) {
+  const transporter = getEmailTransporter();
 
   const mailOptions = {
-    from: `"DSA Grinders" <${process.env.SMTP_EMAIL}>`,
+    from: `"DSA Grinders 🔥" <${process.env.SMTP_EMAIL}>`,
     to: user.email,
-    subject: subject,
-    html: content,
+    subject: getEmailSubject(user.name),
+    html: getEmailHTML(user.name),
+    attachments: [
+      {
+        filename: 'logo.png',
+        path: path.join(process.cwd(), 'public', 'logo.png'),
+        cid: 'logo'
+      }
+    ]
   };
 
   try {
     await transporter.sendMail(mailOptions);
     return { success: true };
-  } catch (error: any) {
-    console.error('Email send error:', error);
-    return { success: false, error: error.message };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to send email';
+    console.error('Email send error:', message);
+    return { success: false, error: message };
   }
 }
 
-async function sendTemplatedWhatsApp(user: any, template: any, roast: string, insult: string) {
-  const content = replaceTemplateVariables(template.content, user, roast, insult);
+// Send WhatsApp using config template
+async function sendConfigWhatsApp(user: User) {
+  if (!user.phoneNumber) {
+    return { success: false, error: 'No phone number' };
+  }
+
+  const message = getWhatsAppMessage(user.name);
 
   try {
-    const result = await sendWhatsAppMessage(user.phoneNumber, content);
-    return result;
-  } catch (error: any) {
-    console.error('WhatsApp send error:', error);
-    return { success: false, error: error.message };
+    return await sendWhatsAppMessage(user.phoneNumber, message);
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Failed to send WhatsApp';
+    console.error('WhatsApp send error:', msg);
+    return { success: false, error: msg };
   }
 }
 
 export async function GET(req: Request) {
   // Auth check using CRON_SECRET
   const authHeader = req.headers.get('authorization');
+  const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
 
-  if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return new Response('Unauthorized - Include Authorization: Bearer <CRON_SECRET> header', { status: 401 });
+  // In production, CRON_SECRET is required
+  if (isProduction && !process.env.CRON_SECRET) {
+    console.error('SECURITY: CRON_SECRET environment variable is not set in production');
+    return new Response('Server configuration error', { status: 500 });
+  }
+
+  // If CRON_SECRET is set (required in production), validate it
+  if (process.env.CRON_SECRET) {
+    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+      console.warn('Unauthorized cron access attempt');
+      return new Response('Unauthorized - Include Authorization: Bearer <CRON_SECRET> header', { status: 401 });
+    }
+  } else if (isProduction) {
+    return new Response('Unauthorized', { status: 401 });
   }
 
   try {
@@ -151,7 +149,7 @@ export async function GET(req: Request) {
 
     // Handle migration from old format to new format
     let needsUpdate = false;
-    const updatePayload: any = {};
+    const updatePayload: Partial<Setting> = {};
 
     if (!s.emailSchedule || (s.emailSchedule as string[]).length === 0) {
       updatePayload.emailSchedule = ["09:00"];
@@ -205,10 +203,6 @@ export async function GET(req: Request) {
       });
     }
 
-    // Get active templates
-    const [whatsappTemplate] = await db.select().from(messageTemplates).where(and(eq(messageTemplates.type, 'whatsapp_roast'), eq(messageTemplates.isActive, true))).limit(1);
-    const [emailTemplate] = await db.select().from(messageTemplates).where(and(eq(messageTemplates.type, 'email_roast'), eq(messageTemplates.isActive, true))).limit(1);
-
     // Exclude admin accounts and pending profiles
     const allUsers = await db.select().from(users).where(
       and(
@@ -217,15 +211,21 @@ export async function GET(req: Request) {
       )
     );
 
-    const results = [];
+    interface UserResult {
+      username: string;
+      email: string;
+      phoneNumber: string | null;
+      statsUpdate: { success: boolean; error?: string };
+      emailSent: { success: boolean; skipped?: boolean; reason?: string; error?: string };
+      whatsappSent: { success: boolean; skipped?: boolean; reason?: string; error?: string };
+    }
+
+    const results: UserResult[] = [];
     let emailsSentCount = 0;
     let whatsappSentCount = 0;
 
-    const batchRoast = '';
-    const batchInsult = '';
-
     for (const user of allUsers) {
-      const userResult: any = {
+      const userResult: UserResult = {
         username: user.leetcodeUsername,
         email: user.email,
         phoneNumber: user.phoneNumber || null,
@@ -234,36 +234,38 @@ export async function GET(req: Request) {
         whatsappSent: { success: false, skipped: false }
       };
 
+      // Update LeetCode stats
       try {
         await updateDailyStatsForUser(user.id, user.leetcodeUsername);
         userResult.statsUpdate = { success: true };
-      } catch (error: any) {
-        userResult.statsUpdate = { success: false, error: error.message };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Stats update failed';
+        userResult.statsUpdate = { success: false, error: message };
       }
 
+      // Send email
       if (shouldSendEmails && emailsSentCount + (s.emailsSentToday ?? 0) < (s.maxDailyEmails ?? 1)) {
         try {
-          if (emailTemplate) {
-            const emailResult = await sendTemplatedEmail(user, emailTemplate, batchRoast, batchInsult);
-            userResult.emailSent = emailResult;
-            if (emailResult.success) emailsSentCount++;
-          }
-        } catch (error: any) {
-          userResult.emailSent = { success: false, error: error.message };
+          const emailResult = await sendConfigEmail(user);
+          userResult.emailSent = emailResult;
+          if (emailResult.success) emailsSentCount++;
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Email failed';
+          userResult.emailSent = { success: false, error: message };
         }
       } else {
         userResult.emailSent = { success: false, skipped: true, reason: 'Not time or limit reached' };
       }
 
+      // Send WhatsApp
       if (shouldSendWhatsApp && whatsappSentCount + (s.whatsappSentToday ?? 0) < (s.maxDailyWhatsapp ?? 1) && user.phoneNumber) {
         try {
-          if (whatsappTemplate) {
-            const whatsappResult = await sendTemplatedWhatsApp(user, whatsappTemplate, batchRoast, batchInsult);
-            userResult.whatsappSent = whatsappResult;
-            if (whatsappResult.success) whatsappSentCount++;
-          }
-        } catch (error: any) {
-          userResult.whatsappSent = { success: false, error: error.message };
+          const whatsappResult = await sendConfigWhatsApp(user);
+          userResult.whatsappSent = whatsappResult;
+          if (whatsappResult.success) whatsappSentCount++;
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'WhatsApp failed';
+          userResult.whatsappSent = { success: false, error: message };
         }
       } else {
         const reason = !shouldSendWhatsApp ? 'Not time or limit reached' : !user.phoneNumber ? 'No phone number' : 'Limit reached';
@@ -296,8 +298,9 @@ export async function GET(req: Request) {
       summary,
       results: results.slice(0, 5)
     });
-  } catch (error: any) {
-    console.error('Cron job error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Cron job failed';
+    console.error('Cron job error:', message);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

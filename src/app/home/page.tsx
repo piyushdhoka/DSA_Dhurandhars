@@ -535,13 +535,15 @@ export default function HomePage() {
                                 </div>
                             </div>
 
-                            {/* Data Rows */}
+                            {/* Data Rows - key changes force re-animation when switching groups */}
                             <motion.div
+                                key={`leaderboard-${activeGroup?.id ?? 'global'}-${leaderboardType}`}
                                 className="divide-y divide-gray-100"
                                 initial="hidden"
                                 animate="visible"
                                 variants={{
-                                    visible: { transition: { staggerChildren: 0.05 } }
+                                    hidden: { opacity: 0 },
+                                    visible: { opacity: 1, transition: { staggerChildren: 0.05 } }
                                 }}
                             >
                                 {leaderboard.map((entry, index) => (

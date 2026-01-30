@@ -87,7 +87,8 @@ export default function OnboardingModal() {
             const data = await res.json();
             if (res.ok) {
                 toast.success('Welcome to DSA Grinders! Profile completed.');
-                updateUser({ ...data.user, isProfileIncomplete: false });
+                // Use the server-calculated isProfileIncomplete flag
+                updateUser(data.user);
             } else {
                 toast.error(data.error || 'Failed to update profile');
             }
@@ -101,34 +102,34 @@ export default function OnboardingModal() {
 
     return (
         <AnimatePresence>
-            <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+            <div className="fixed inset-0 z-100 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-md overflow-y-auto">
                 <motion.div
                     initial={{ opacity: 0, scale: 0.9, y: 30 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                    className="w-full max-w-lg bg-white/90 backdrop-blur-2xl rounded-3xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.2)] overflow-hidden border border-white/20 relative"
+                    className="w-full max-w-[95vw] sm:max-w-lg bg-white/90 backdrop-blur-2xl rounded-2xl sm:rounded-3xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.2)] overflow-hidden border border-white/20 relative my-4"
                 >
                     {/* Background Accents */}
                     <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full -mr-32 -mt-32 blur-3xl pointer-events-none" />
                     <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/5 rounded-full -ml-32 -mb-32 blur-3xl pointer-events-none" />
 
-                    <div className="bg-linear-to-br from-gray-900 to-blue-900 p-8 text-white relative">
-                        <div className="flex items-center gap-4 mb-2">
-                            <div className="bg-white/10 p-3 rounded-2xl backdrop-blur-md border border-white/10 shadow-inner">
-                                <span className="text-2xl">🚀</span>
+                    <div className="bg-linear-to-br from-gray-900 to-blue-900 p-5 sm:p-8 text-white relative">
+                        <div className="flex items-center gap-3 sm:gap-4 mb-2">
+                            <div className="bg-white/10 p-2.5 sm:p-3 rounded-xl sm:rounded-2xl backdrop-blur-md border border-white/10 shadow-inner">
+                                <span className="text-xl sm:text-2xl">🚀</span>
                             </div>
                             <div>
-                                <h2 className="text-3xl font-bold tracking-tight">Level Up</h2>
-                                <p className="text-blue-200/80 text-sm font-medium">Complete your profile to start the grind</p>
+                                <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Level Up</h2>
+                                <p className="text-blue-200/80 text-xs sm:text-sm font-medium">Complete your profile to start the grind</p>
                             </div>
                         </div>
-                        <p className="text-blue-100/60 mt-4 text-sm leading-relaxed max-w-sm">
+                        <p className="text-blue-100/60 mt-3 sm:mt-4 text-xs sm:text-sm leading-relaxed max-w-sm">
                             Fill in all the mandatory details below. We need these to track your progress and send you those daily roasts.
                         </p>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="p-8 space-y-6 relative">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <form onSubmit={handleSubmit} className="p-5 sm:p-8 space-y-5 sm:space-y-6 relative">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
                                     <User className="w-3.5 h-3.5 text-blue-500" /> LeetCode

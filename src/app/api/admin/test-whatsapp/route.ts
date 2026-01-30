@@ -1,22 +1,9 @@
 import { NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth';
 import { sendWhatsAppMessage } from '@/lib/whatsapp';
 
-// Simple admin check
-function isAdmin(user: any): boolean {
-  return user.role === 'admin';
-}
-
-export const POST = requireAuth(async (req, user) => {
+export const POST = requireAdmin(async (req, user) => {
   try {
-    // Check if user is admin
-    if (!isAdmin(user)) {
-      return NextResponse.json(
-        { error: 'Access denied. Admin privileges required.' },
-        { status: 403 }
-      );
-    }
-
     const { phoneNumber, message } = await req.json();
 
     if (!phoneNumber) {
@@ -60,4 +47,4 @@ DSA Grinders Admin Test`;
     console.error('WhatsApp test error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-}); 
+});

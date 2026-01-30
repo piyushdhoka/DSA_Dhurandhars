@@ -57,35 +57,35 @@
       "purpose": "any maskable"
     }
   ],
-  "screenshots": [
-    {
-      "src": "/screenshots/home.png",
-      "sizes": "540x720",
-      "type": "image/png",
-      "form_factor": "narrow"
-    },
-    {
-      "src": "/screenshots/leaderboard.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide"
-    }
+  "categories": [
+    "education",
+    "productivity",
+    "utilities"
   ],
-  "categories": ["education", "productivity", "utilities"],
   "shortcuts": [
     {
       "name": "Leaderboard",
       "short_name": "Leaderboard",
       "description": "View the leaderboard",
       "url": "/home",
-      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "/icons/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
     },
     {
       "name": "Profile",
       "short_name": "Profile",
       "description": "View your profile",
       "url": "/profile",
-      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "/icons/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ]
 }

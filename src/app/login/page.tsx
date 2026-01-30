@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/components/AuthContext";
@@ -8,8 +9,16 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 
 export default function AuthPage() {
-    const { signInWithGoogle, isLoading: authLoading } = useAuth();
+    const { user, signInWithGoogle, isLoading: authLoading } = useAuth();
+    const router = useRouter();
     const [isRedirecting, setIsRedirecting] = useState(false);
+
+    // Redirect logged-in users to home
+    useEffect(() => {
+        if (!authLoading && user) {
+            router.push('/home');
+        }
+    }, [user, authLoading, router]);
 
     const handleGoogleSignIn = async () => {
         setIsRedirecting(true);
@@ -20,6 +29,15 @@ export default function AuthPage() {
             setIsRedirecting(false);
         }
     };
+
+    // Show loading while checking auth or if user is logged in (redirecting)
+    if (authLoading || user) {
+        return (
+            <div className="min-h-screen bg-[#fafafa] flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-[#fafafa] flex flex-col items-center justify-center p-4 font-sans selection:bg-blue-100">

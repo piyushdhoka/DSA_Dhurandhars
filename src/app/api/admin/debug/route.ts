@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { db } from '@/db/drizzle';
-import { users as usersTable, messageTemplates } from '@/db/schema';
-import { eq, ne, notLike, and } from 'drizzle-orm';
+import { users as usersTable } from '@/db/schema';
+import { eq, ne } from 'drizzle-orm';
 
 // Simple admin check
 function isAdmin(user: any): boolean {
@@ -32,9 +32,6 @@ export const GET = requireAuth(async (req, user) => {
     // Get non-admin users
     const regularUsers = allUsers.filter(u => u.role !== 'admin');
 
-    // Get templates
-    const templates = await db.select().from(messageTemplates);
-
     // Environment check
     const envCheck = {
       SMTP_EMAIL: !!process.env.SMTP_EMAIL,
@@ -48,7 +45,6 @@ export const GET = requireAuth(async (req, user) => {
         regularUsers: regularUsers.length,
         adminUsers: allUsers.length - regularUsers.length,
         usersWithPhone: regularUsers.filter(u => u.phoneNumber && u.phoneNumber.trim()).length,
-        templates: templates.length,
         environment: envCheck
       },
       users: regularUsers.map(u => ({
@@ -57,14 +53,6 @@ export const GET = requireAuth(async (req, user) => {
         leetcodeUsername: u.leetcodeUsername,
         hasPhone: !!u.phoneNumber,
         phonePreview: u.phoneNumber ? u.phoneNumber.substring(0, 5) + '***' : null
-      })),
-      templates: templates.map(t => ({
-        id: t.id,
-        type: t.type,
-        name: t.name,
-        isActive: t.isActive,
-        hasContent: !!t.content,
-        contentLength: t.content?.length || 0
       })),
       adminUser: {
         name: user.name,

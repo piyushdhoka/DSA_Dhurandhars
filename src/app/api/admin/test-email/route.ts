@@ -1,22 +1,9 @@
 import { NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/auth';
-import nodemailer from 'nodemailer';
+import { requireAdmin } from '@/lib/auth';
+import { getEmailTransporter } from '@/lib/emailTransporter';
 
-// Simple admin check
-function isAdmin(user: any): boolean {
-  return user.role === 'admin';
-}
-
-export const POST = requireAuth(async (req, user) => {
+export const POST = requireAdmin(async (req, user) => {
   try {
-    // Check if user is admin
-    if (!isAdmin(user)) {
-      return NextResponse.json(
-        { error: 'Access denied. Admin privileges required.' },
-        { status: 403 }
-      );
-    }
-
     const { email } = await req.json();
 
     if (!email) {
@@ -26,36 +13,16 @@ export const POST = requireAuth(async (req, user) => {
       );
     }
 
-    // Check environment variables
-    const envCheck = {
-      SMTP_EMAIL: process.env.SMTP_EMAIL,
-      SMTP_PASSWORD: !!process.env.SMTP_PASSWORD,
-      SMTP_PASSWORD_LENGTH: process.env.SMTP_PASSWORD?.length || 0
-    };
-
-    console.log('Email environment check:', envCheck);
-
-    // Create transporter with detailed logging
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.SMTP_EMAIL,
-        pass: process.env.SMTP_PASSWORD,
-      },
-      debug: true, // Enable debug logging
-      logger: true // Enable logger
-    });
+    const transporter = getEmailTransporter();
 
     // Verify transporter configuration
     try {
       await transporter.verify();
-      console.log('✅ SMTP connection verified successfully');
     } catch (verifyError: any) {
-      console.error('❌ SMTP verification failed:', verifyError);
+      console.error('SMTP verification failed:', verifyError);
       return NextResponse.json({
         error: 'SMTP configuration error',
-        details: verifyError.message,
-        envCheck
+        details: verifyError.message
       }, { status: 500 });
     }
 
@@ -80,18 +47,7 @@ export const POST = requireAuth(async (req, user) => {
       `,
     };
 
-    console.log('Sending test email to:', email);
-    console.log('From:', process.env.SMTP_EMAIL);
-
     const info = await transporter.sendMail(testMessage);
-
-    console.log('✅ Test email sent successfully:', info.messageId);
-    console.log('Email info:', {
-      messageId: info.messageId,
-      response: info.response,
-      accepted: info.accepted,
-      rejected: info.rejected
-    });
 
     return NextResponse.json({
       success: true,
@@ -99,24 +55,15 @@ export const POST = requireAuth(async (req, user) => {
       details: {
         messageId: info.messageId,
         response: info.response,
-        accepted: info.accepted,
-        rejected: info.rejected,
         to: email,
         from: process.env.SMTP_EMAIL
-      },
-      envCheck
+      }
     });
 
   } catch (error: any) {
-    console.error('❌ Test email error:', error);
+    console.error('Test email error:', error);
     return NextResponse.json({
       error: error.message,
-      stack: error.stack,
-      envCheck: {
-        SMTP_EMAIL: process.env.SMTP_EMAIL,
-        SMTP_PASSWORD: !!process.env.SMTP_PASSWORD,
-        SMTP_PASSWORD_LENGTH: process.env.SMTP_PASSWORD?.length || 0
-      }
     }, { status: 500 });
   }
 });

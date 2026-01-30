@@ -1,66 +1,34 @@
+import path from 'path';
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
 import { db } from '@/db/drizzle';
 import { users as usersTable } from '@/db/schema';
 import { inArray } from 'drizzle-orm';
 import { sendWhatsAppMessage } from '@/lib/whatsapp';
-import nodemailer from 'nodemailer';
-
-// Email transporter
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.SMTP_EMAIL,
-    pass: process.env.SMTP_PASSWORD,
-  },
-});
+import { getEmailTransporter } from '@/lib/emailTransporter';
+import { getCustomEmailHTML } from '@/config/messages';
 
 async function sendCustomEmail(toEmail: string, userName: string, subject: string, message: string) {
+  const transporter = getEmailTransporter();
+  const html = getCustomEmailHTML(userName, subject, message);
+
   const mailOptions = {
     from: `"DSA Grinders" <${process.env.SMTP_EMAIL}>`,
     to: toEmail,
     subject: subject,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 16px;">
-        <h1 style="color: #00d4ff; text-align: center; font-size: 32px; margin-bottom: 10px;">
-          DSA GRINDERS
-        </h1>
-        <p style="color: #888; text-align: center; font-size: 14px; margin-bottom: 20px;">
-          Message from Admin
-        </p>
-        
-        <div style="background: rgba(0,212,255,0.15); border: 2px solid rgba(0,212,255,0.4); border-radius: 12px; padding: 24px; margin-bottom: 20px;">
-          <h2 style="color: #00d4ff; text-align: center; font-size: 24px; margin: 0 0 10px 0;">
-            ${subject}
-          </h2>
-        </div>
-        
-        <div style="background: rgba(255,255,255,0.1); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-          <p style="color: #e0e0e0; font-size: 16px; line-height: 1.6; white-space: pre-wrap;">
-            Hey <strong style="color: #00d4ff;">${userName}</strong>!
-\n${message}
-          </p>
-        </div>
-        
-        <div style="text-align: center; margin-top: 24px;">
-          <a href="https://leetcode.com/problemset/" style="display: inline-block; background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%); color: #fff; padding: 16px 40px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 18px; text-transform: uppercase;">
-            OPEN LEETCODE
-          </a>
-        </div>
-        
-        <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
-          <p style="color: #666; font-size: 11px; text-align: center;">
-            This message was sent by DSA Grinders Admin.<br>
-            Keep grinding and stay motivated!
-          </p>
-        </div>
-      </div>
-    `,
+    html: html,
+    attachments: [
+      {
+        filename: 'logo.png',
+        path: path.join(process.cwd(), 'public', 'logo.png'),
+        cid: 'logo'
+      }
+    ]
   };
 
   try {
-    const info = await transporter.sendMail(mailOptions);
-    return { success: true, info };
+    await transporter.sendMail(mailOptions);
+    return { success: true };
   } catch (error: any) {
     console.error(`Email send error for ${toEmail}:`, error);
     return { success: false, error: error.message };

@@ -96,11 +96,21 @@ export const Particles: React.FC<ParticlesProps> = ({
   const mousePosition = MousePosition()
   const mouse = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
   const canvasSize = useRef<{ w: number; h: number }>({ w: 0, h: 0 })
-  const dpr = typeof window !== "undefined" ? window.devicePixelRatio : 1
+  // Fix hydration mismatch - only use devicePixelRatio on client
+  const [isMounted, setIsMounted] = useState(false)
+  const dpr = isMounted && typeof window !== "undefined" ? window.devicePixelRatio : 1
   const rafID = useRef<number | null>(null)
   const resizeTimeout = useRef<NodeJS.Timeout | null>(null)
 
+  // Set mounted state to avoid hydration mismatch
   useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  useEffect(() => {
+    // Only run on client after mount to prevent hydration mismatch
+    if (!isMounted) return
+
     if (canvasRef.current) {
       context.current = canvasRef.current.getContext("2d")
     }
@@ -127,15 +137,17 @@ export const Particles: React.FC<ParticlesProps> = ({
       }
       window.removeEventListener("resize", handleResize)
     }
-  }, [color])
+  }, [color, isMounted])
 
   useEffect(() => {
+    if (!isMounted) return
     onMouseMove()
-  }, [mousePosition.x, mousePosition.y])
+  }, [mousePosition.x, mousePosition.y, isMounted])
 
   useEffect(() => {
+    if (!isMounted) return
     initCanvas()
-  }, [refresh])
+  }, [refresh, isMounted])
 
   const initCanvas = () => {
     resizeCanvas()

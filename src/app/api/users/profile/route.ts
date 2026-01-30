@@ -1,23 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { db } from '@/db/drizzle';
-import { users } from '@/db/schema';
+import { users, User } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { updateDailyStatsForUser } from '@/lib/leetcode';
+import { updateDailyStatsForUser, LeetCodeError } from '@/lib/leetcode';
+import { profileUpdateSchema, validateRequest, createErrorResponse } from '@/lib/validation';
+import type { AuthenticatedUser } from '@/types';
 
-export const PUT = requireAuth(async (req: NextRequest, user: any) => {
+// Type for the update payload
+interface UserUpdatePayload {
+  name?: string;
+  github?: string;
+  linkedin?: string | null;
+  leetcodeUsername?: string;
+  phoneNumber?: string | null;
+}
+
+export const PUT = requireAuth(async (req: NextRequest, user: User) => {
   try {
-    const { name, phoneNumber, github, linkedin, leetcodeUsername } = await req.json();
+    const body = await req.json();
 
-    // Validate phone number format if provided
-    if (phoneNumber && !/^\+?[1-9]\d{1,14}$/.test(phoneNumber.replace(/\s/g, ''))) {
+    // Validate request body with Zod
+    const validation = validateRequest(profileUpdateSchema, body);
+    if (!validation.success) {
       return NextResponse.json(
-        { error: 'Invalid phone number format. Use international format (e.g., +1234567890)' },
+        createErrorResponse(validation.error, 'VALIDATION_ERROR', validation.details),
         { status: 400 }
       );
     }
 
-    const updateData: any = {};
+    const { name, phoneNumber, github, linkedin, leetcodeUsername } = validation.data;
+
+    const updateData: UserUpdatePayload = {};
     if (name) updateData.name = name;
 
     // Attach links if only usernames are provided
@@ -46,7 +60,7 @@ export const PUT = requireAuth(async (req: NextRequest, user: any) => {
 
     if (!updatedUser) {
       return NextResponse.json(
-        { error: 'User not found' },
+        createErrorResponse('User not found', 'NOT_FOUND'),
         { status: 404 }
       );
     }
@@ -55,30 +69,54 @@ export const PUT = requireAuth(async (req: NextRequest, user: any) => {
     if (leetcodeUsername) {
       try {
         await updateDailyStatsForUser(updatedUser.id, updatedUser.leetcodeUsername);
-      } catch (syncError: any) {
+      } catch (syncError) {
         console.error('Initial LeetCode sync failed:', syncError);
-        // If the user is not found, we should inform the client
-        if (syncError.message.includes('not found') || syncError.message.includes('does not exist')) {
-          return NextResponse.json({
-            error: syncError.message
-          }, { status: 400 });
+        // Handle LeetCode-specific errors with user-friendly messages
+        if (syncError instanceof LeetCodeError) {
+          return NextResponse.json(
+            createErrorResponse(syncError.message, syncError.code),
+            { status: 400 }
+          );
+        }
+        // Check for user not found in generic errors
+        if (syncError instanceof Error &&
+          (syncError.message.includes('not found') || syncError.message.includes('does not exist'))) {
+          return NextResponse.json(
+            createErrorResponse(syncError.message, 'LEETCODE_USER_NOT_FOUND'),
+            { status: 400 }
+          );
         }
       }
     }
 
-    return NextResponse.json({
-      user: {
-        id: updatedUser.id,
-        name: updatedUser.name,
-        email: updatedUser.email,
-        leetcodeUsername: updatedUser.leetcodeUsername,
-        github: updatedUser.github,
-        linkedin: updatedUser.linkedin,
-        phoneNumber: updatedUser.phoneNumber,
-      },
-    });
-  } catch (error: any) {
+    // Calculate isProfileIncomplete using the same logic as auth sync
+    const isProfileIncomplete =
+      !updatedUser.leetcodeUsername ||
+      updatedUser.leetcodeUsername.startsWith('pending_') ||
+      !updatedUser.github ||
+      updatedUser.github === 'pending' ||
+      !updatedUser.phoneNumber ||
+      !updatedUser.linkedin;
+
+    const responseUser: AuthenticatedUser = {
+      id: updatedUser.id,
+      name: updatedUser.name,
+      email: updatedUser.email,
+      leetcodeUsername: updatedUser.leetcodeUsername,
+      github: updatedUser.github,
+      linkedin: updatedUser.linkedin,
+      phoneNumber: updatedUser.phoneNumber,
+      role: updatedUser.role,
+      isProfileIncomplete,
+    };
+
+    return NextResponse.json({ user: responseUser });
+  } catch (error) {
     console.error('Profile update error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'An unexpected error occurred';
+    return NextResponse.json(
+      createErrorResponse(message, 'INTERNAL_ERROR'),
+      { status: 500 }
+    );
   }
 });

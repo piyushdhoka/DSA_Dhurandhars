@@ -1,79 +1,166 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { db } from '@/db/drizzle';
 import { users, dailyStats } from '@/db/schema';
-import { eq, or, and, desc, ne, notLike, sql } from 'drizzle-orm';
+import { eq, and, desc, ne, notLike, sql } from 'drizzle-orm';
+import { checkRateLimit, getClientIdentifier, RATE_LIMITS, getRateLimitHeaders } from '@/lib/rateLimit';
+
+// In-memory cache for leaderboard data
+interface CachedLeaderboard {
+  data: LeaderboardEntry[];
+  timestamp: number;
+  type: string;
+}
+
+interface LeaderboardEntry {
+  id: number;
+  name: string;
+  email: string;
+  leetcodeUsername: string;
+  todayPoints: number;
+  totalScore: number;
+  totalProblems: number;
+  easy: number;
+  medium: number;
+  hard: number;
+  ranking: number;
+  avatar: string;
+  country: string;
+  streak: number;
+  lastSubmission: string | null;
+  recentProblems: string[];
+  lastUpdated: string | null;
+  github: string | null;
+  linkedin: string | null;
+  rank: number;
+}
+
+// Cache duration: 2 minutes (120000 ms)
+const CACHE_DURATION_MS = 2 * 60 * 1000;
+const leaderboardCache = new Map<string, CachedLeaderboard>();
 
 export async function GET(request: NextRequest) {
+  // Apply rate limiting
+  const clientId = getClientIdentifier(request);
+  const rateLimitResult = checkRateLimit(clientId, RATE_LIMITS.LEADERBOARD);
+
+  if (!rateLimitResult.allowed) {
+    return new NextResponse(
+      JSON.stringify({ error: 'Too many requests. Please try again later.' }),
+      {
+        status: 429,
+        headers: {
+          'Content-Type': 'application/json',
+          ...getRateLimitHeaders(rateLimitResult),
+        },
+      }
+    );
+  }
+
   try {
-    // Exclude admin accounts from leaderboard
-    // We can filter by role or by email pattern
-    const allUsers = await db.select({
-      id: users.id,
-      name: users.name,
-      email: users.email,
-      leetcodeUsername: users.leetcodeUsername,
-      github: users.github,
-      linkedin: users.linkedin,
-    })
-      .from(users)
-      .where(
-        and(
-          ne(users.role, 'admin'),
-          notLike(users.leetcodeUsername, 'pending_%')
-        )
-      );
+    const searchParams = new URL(request.url).searchParams;
+    const type = searchParams.get('type') || 'daily';
+    const cacheKey = `leaderboard_${type}`;
 
-    const today = new Date().toISOString().split('T')[0];
-
-    const leaderboard = [];
-    for (const user of allUsers) {
-      // Get today's stat specifically
-      const [todayStat] = await db.select()
-        .from(dailyStats)
-        .where(and(eq(dailyStats.userId, user.id), eq(dailyStats.date, today)))
-        .limit(1);
-
-      // Get latest stat for other data points
-      const [latestStat] = await db.select()
-        .from(dailyStats)
-        .where(eq(dailyStats.userId, user.id))
-        .orderBy(desc(dailyStats.date))
-        .limit(1);
-
-      // Calculate total score: easy=1, medium=3, hard=6
-      const easy = latestStat?.easy ?? 0;
-      const medium = latestStat?.medium ?? 0;
-      const hard = latestStat?.hard ?? 0;
-      const totalScore = easy * 1 + medium * 3 + hard * 6;
-
-      leaderboard.push({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        leetcodeUsername: user.leetcodeUsername,
-        todayPoints: todayStat?.todayPoints || 0,
-        totalScore: totalScore,
-        totalProblems: latestStat?.total ?? 0,
-        easy: easy,
-        medium: medium,
-        hard: hard,
-        ranking: latestStat?.ranking ?? 0,
-        avatar: latestStat?.avatar ?? '',
-        country: latestStat?.country ?? '',
-        streak: latestStat?.streak ?? 0,
-        lastSubmission: latestStat?.lastSubmission || null,
-        recentProblems: latestStat?.recentProblems || [],
-        lastUpdated: latestStat?.date || null,
-        github: user.github || null,
-        linkedin: user.linkedin || null,
-        rank: 0,
+    // Check cache first
+    const cached = leaderboardCache.get(cacheKey);
+    const now = Date.now();
+    if (cached && (now - cached.timestamp) < CACHE_DURATION_MS) {
+      return new NextResponse(JSON.stringify(cached.data), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Cache': 'HIT',
+          'X-Cache-Age': Math.floor((now - cached.timestamp) / 1000).toString(),
+          ...getRateLimitHeaders(rateLimitResult),
+        },
       });
     }
 
-    // Sort based on type
-    const searchParams = new URL(request.url).searchParams;
-    const type = searchParams.get('type') || 'daily'; // Default to daily
+    const today = new Date().toISOString().split('T')[0];
 
+    // Single optimized query using subqueries to avoid N+1
+    // This joins users with their latest stats and today's stats in one go
+    const result = await db.execute(sql`
+      WITH latest_stats AS (
+        SELECT DISTINCT ON (user_id) 
+          user_id,
+          date,
+          easy,
+          medium,
+          hard,
+          total,
+          ranking,
+          avatar,
+          country,
+          streak,
+          last_submission,
+          recent_problems
+        FROM daily_stats
+        ORDER BY user_id, date DESC
+      ),
+      today_stats AS (
+        SELECT user_id, today_points
+        FROM daily_stats
+        WHERE date = ${today}
+      )
+      SELECT 
+        u.id,
+        u.name,
+        u.email,
+        u.leetcode_username as "leetcodeUsername",
+        u.github,
+        u.linkedin,
+        COALESCE(t.today_points, 0) as "todayPoints",
+        COALESCE(l.easy, 0) as easy,
+        COALESCE(l.medium, 0) as medium,
+        COALESCE(l.hard, 0) as hard,
+        COALESCE(l.total, 0) as "totalProblems",
+        COALESCE(l.ranking, 0) as ranking,
+        COALESCE(l.avatar, '') as avatar,
+        COALESCE(l.country, '') as country,
+        COALESCE(l.streak, 0) as streak,
+        l.last_submission as "lastSubmission",
+        l.recent_problems as "recentProblems",
+        l.date as "lastUpdated"
+      FROM users u
+      LEFT JOIN latest_stats l ON u.id = l.user_id
+      LEFT JOIN today_stats t ON u.id = t.user_id
+      WHERE u.role != 'admin' 
+        AND u.leetcode_username NOT LIKE 'pending_%'
+    `);
+
+    // Transform the result
+    const leaderboard: LeaderboardEntry[] = (result.rows as any[]).map((row) => {
+      const easy = Number(row.easy) || 0;
+      const medium = Number(row.medium) || 0;
+      const hard = Number(row.hard) || 0;
+      const totalScore = easy * 1 + medium * 3 + hard * 6;
+
+      return {
+        id: row.id,
+        name: row.name,
+        email: row.email,
+        leetcodeUsername: row.leetcodeUsername,
+        todayPoints: Number(row.todayPoints) || 0,
+        totalScore,
+        totalProblems: Number(row.totalProblems) || 0,
+        easy,
+        medium,
+        hard,
+        ranking: Number(row.ranking) || 0,
+        avatar: row.avatar || '',
+        country: row.country || '',
+        streak: Number(row.streak) || 0,
+        lastSubmission: row.lastSubmission || null,
+        recentProblems: row.recentProblems || [],
+        lastUpdated: row.lastUpdated || null,
+        github: row.github || null,
+        linkedin: row.linkedin || null,
+        rank: 0,
+      };
+    });
+
+    // Sort based on type
     if (type === 'daily') {
       leaderboard.sort((a, b) => b.todayPoints - a.todayPoints || b.totalScore - a.totalScore);
     } else {
@@ -85,9 +172,24 @@ export async function GET(request: NextRequest) {
       entry.rank = index + 1;
     });
 
-    return NextResponse.json(leaderboard);
-  } catch (error: any) {
-    console.error('Leaderboard error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    // Update cache
+    leaderboardCache.set(cacheKey, {
+      data: leaderboard,
+      timestamp: now,
+      type,
+    });
+
+    return new NextResponse(JSON.stringify(leaderboard), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Cache': 'MISS',
+        ...getRateLimitHeaders(rateLimitResult),
+      },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'An unexpected error occurred';
+    console.error('Leaderboard error:', message);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

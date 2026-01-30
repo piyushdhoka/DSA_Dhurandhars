@@ -1,15 +1,34 @@
 import { db } from '@/db/drizzle';
 import { dailyStats } from '@/db/schema';
 import { eq, and, lt, desc } from 'drizzle-orm';
+import type { LeetCodeStats, LeetCodeAPIError } from '@/types';
 
 const LEETCODE_GRAPHQL = 'https://leetcode.com/graphql';
+const MAX_RETRIES = 3;
+const INITIAL_RETRY_DELAY_MS = 1000;
+
+// Custom error class for LeetCode API errors
+export class LeetCodeError extends Error {
+  code: LeetCodeAPIError['code'];
+  retryable: boolean;
+
+  constructor(code: LeetCodeAPIError['code'], message: string, retryable: boolean = false) {
+    super(message);
+    this.name = 'LeetCodeError';
+    this.code = code;
+    this.retryable = retryable;
+  }
+}
+
+// Sleep utility for retry delays
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Calculate current streak from submission calendar
 function calculateStreak(calendarData: string): number {
   if (!calendarData) return 0;
 
   try {
-    const calendar = JSON.parse(calendarData);
+    const calendar: Record<string, number> = JSON.parse(calendarData);
     const timestamps = Object.keys(calendar).map(Number).sort((a, b) => b - a);
 
     if (timestamps.length === 0) return 0;
@@ -45,7 +64,39 @@ function calculateStreak(calendarData: string): number {
   }
 }
 
-async function fetchLeetCodeUser(username: string) {
+// LeetCode GraphQL response types
+interface LeetCodeUserProfile {
+  ranking: number;
+  userAvatar: string | null;
+  realName: string | null;
+  countryName: string | null;
+}
+
+interface LeetCodeSubmissionCount {
+  difficulty: 'Easy' | 'Medium' | 'Hard' | 'All';
+  count: number;
+}
+
+interface LeetCodeMatchedUser {
+  username: string;
+  profile: LeetCodeUserProfile;
+  submitStatsGlobal: {
+    acSubmissionNum: LeetCodeSubmissionCount[];
+  };
+  submissionCalendar: string;
+}
+
+interface LeetCodeGraphQLResponse {
+  data: {
+    matchedUser: LeetCodeMatchedUser | null;
+  };
+  errors?: Array<{ message: string }>;
+}
+
+async function fetchLeetCodeUserWithRetry(
+  username: string,
+  retryCount: number = 0
+): Promise<LeetCodeMatchedUser> {
   const query = `
     query getUserProfile($username: String!) {
       matchedUser(username: $username) {
@@ -67,92 +118,164 @@ async function fetchLeetCodeUser(username: string) {
     }
   `;
 
-  const response = await fetch(LEETCODE_GRAPHQL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'User-Agent': 'Mozilla/5.0',
-      'Referer': 'https://leetcode.com',
-    },
-    body: JSON.stringify({ query, variables: { username } }),
-    cache: 'no-store', // Disable caching to ensure fresh data
-  });
+  try {
+    const response = await fetch(LEETCODE_GRAPHQL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0',
+        'Referer': 'https://leetcode.com',
+      },
+      body: JSON.stringify({ query, variables: { username } }),
+      cache: 'no-store',
+    });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`LeetCode API error for ${username}:`, response.status, errorText);
-    throw new Error(`LeetCode API error: ${response.status}`);
+    // Handle rate limiting
+    if (response.status === 429) {
+      if (retryCount < MAX_RETRIES) {
+        const delay = INITIAL_RETRY_DELAY_MS * Math.pow(2, retryCount);
+        console.log(`Rate limited by LeetCode, retrying in ${delay}ms...`);
+        await sleep(delay);
+        return fetchLeetCodeUserWithRetry(username, retryCount + 1);
+      }
+      throw new LeetCodeError(
+        'RATE_LIMITED',
+        'LeetCode is temporarily limiting requests. Please try again in a few minutes.',
+        true
+      );
+    }
+
+    // Handle server errors (5xx) with retry
+    if (response.status >= 500) {
+      if (retryCount < MAX_RETRIES) {
+        const delay = INITIAL_RETRY_DELAY_MS * Math.pow(2, retryCount);
+        console.log(`LeetCode server error ${response.status}, retrying in ${delay}ms...`);
+        await sleep(delay);
+        return fetchLeetCodeUserWithRetry(username, retryCount + 1);
+      }
+      throw new LeetCodeError(
+        'API_ERROR',
+        'LeetCode is experiencing issues. Please try again later.',
+        true
+      );
+    }
+
+    if (!response.ok) {
+      throw new LeetCodeError(
+        'API_ERROR',
+        `Failed to connect to LeetCode (Status: ${response.status})`,
+        false
+      );
+    }
+
+    const data: LeetCodeGraphQLResponse = await response.json();
+
+    // Check for GraphQL errors
+    if (data.errors && data.errors.length > 0) {
+      throw new LeetCodeError(
+        'API_ERROR',
+        data.errors[0].message,
+        false
+      );
+    }
+
+    if (!data.data?.matchedUser) {
+      throw new LeetCodeError(
+        'USER_NOT_FOUND',
+        `User "${username}" not found on LeetCode. Please check the username is correct.`,
+        false
+      );
+    }
+
+    return data.data.matchedUser;
+
+  } catch (error) {
+    // Handle network errors with retry
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      if (retryCount < MAX_RETRIES) {
+        const delay = INITIAL_RETRY_DELAY_MS * Math.pow(2, retryCount);
+        console.log(`Network error, retrying in ${delay}ms...`);
+        await sleep(delay);
+        return fetchLeetCodeUserWithRetry(username, retryCount + 1);
+      }
+      throw new LeetCodeError(
+        'NETWORK_ERROR',
+        'Unable to connect to LeetCode. Please check your internet connection.',
+        true
+      );
+    }
+
+    // Re-throw LeetCodeError as-is
+    if (error instanceof LeetCodeError) {
+      throw error;
+    }
+
+    // Wrap unknown errors
+    throw new LeetCodeError(
+      'API_ERROR',
+      error instanceof Error ? error.message : 'An unexpected error occurred',
+      false
+    );
   }
-
-  const data = await response.json();
-
-
-  return data.data;
 }
 
-export async function fetchLeetCodeStats(username: string) {
-  try {
-    const userStats = await fetchLeetCodeUser(username);
+export async function fetchLeetCodeStats(username: string): Promise<LeetCodeStats> {
+  // Use the retry-enabled fetch function
+  const matchedUser = await fetchLeetCodeUserWithRetry(username);
 
-    if (!userStats || !userStats.matchedUser) {
-      throw new Error(`User "${username}" not found on LeetCode. Please check the username is correct.`);
-    }
-
-    const submitStats = userStats.matchedUser.submitStatsGlobal;
-    if (!submitStats || !submitStats.acSubmissionNum || submitStats.acSubmissionNum.length === 0) {
-      throw new Error(`Could not fetch submission stats for "${username}". The profile may be private.`);
-    }
-
-    const acNum = submitStats.acSubmissionNum;
-    const easy = acNum.find((s: any) => s.difficulty === 'Easy')?.count || 0;
-    const medium = acNum.find((s: any) => s.difficulty === 'Medium')?.count || 0;
-    const hard = acNum.find((s: any) => s.difficulty === 'Hard')?.count || 0;
-    const total = acNum.find((s: any) => s.difficulty === 'All')?.count || 0;
-    const ranking = userStats.matchedUser.profile?.ranking || 0;
-
-    // LeetCode's public API doesn't return avatars, so we construct the URL
-    // Format: https://assets.leetcode.com/users/avatars/avatar_{timestamp}_{username}.png
-    // Since we can't get the exact URL, we'll use LeetCode's default or a placeholder service
-    const avatarFromAPI = userStats.matchedUser.profile?.userAvatar;
-    const avatar = avatarFromAPI || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1a73e8&color=fff&size=128`;
-
-    const country = userStats.matchedUser.profile?.countryName || '';
-
-
-    // Calculate streak from submission calendar
-    const calendar = userStats.matchedUser.submissionCalendar;
-    const streak = calculateStreak(calendar);
-
-    // Get last submission timestamp from calendar
-    let lastSubmission = null;
-    if (calendar) {
-      try {
-        const calendarObj = JSON.parse(calendar);
-        const timestamps = Object.keys(calendarObj).map(Number);
-        if (timestamps.length > 0) {
-          lastSubmission = Math.max(...timestamps).toString();
-        }
-      } catch (e) {
-        console.error('Error parsing submission calendar:', e);
-      }
-    }
-
-    return {
-      easy,
-      medium,
-      hard,
-      total,
-      ranking,
-      avatar,
-      country,
-      recentSubmissions: [], // Not available from public API
-      streak,
-      lastSubmission,
-    };
-  } catch (error) {
-    console.error(`Error fetching LeetCode stats for ${username}:`, error);
-    throw error;
+  const submitStats = matchedUser.submitStatsGlobal;
+  if (!submitStats || !submitStats.acSubmissionNum || submitStats.acSubmissionNum.length === 0) {
+    throw new LeetCodeError(
+      'PROFILE_PRIVATE',
+      `Could not fetch submission stats for "${username}". The profile may be private.`,
+      false
+    );
   }
+
+  const acNum = submitStats.acSubmissionNum;
+  const easy = acNum.find((s) => s.difficulty === 'Easy')?.count || 0;
+  const medium = acNum.find((s) => s.difficulty === 'Medium')?.count || 0;
+  const hard = acNum.find((s) => s.difficulty === 'Hard')?.count || 0;
+  const total = acNum.find((s) => s.difficulty === 'All')?.count || 0;
+  const ranking = matchedUser.profile?.ranking || 0;
+
+  // LeetCode's public API doesn't return avatars, so we construct the URL
+  const avatarFromAPI = matchedUser.profile?.userAvatar;
+  const avatar = avatarFromAPI || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1a73e8&color=fff&size=128`;
+
+  const country = matchedUser.profile?.countryName || '';
+
+
+  // Calculate streak from submission calendar
+  const calendar = matchedUser.submissionCalendar;
+  const streak = calculateStreak(calendar);
+
+  // Get last submission timestamp from calendar
+  let lastSubmission: string | null = null;
+  if (calendar) {
+    try {
+      const calendarObj: Record<string, number> = JSON.parse(calendar);
+      const timestamps = Object.keys(calendarObj).map(Number);
+      if (timestamps.length > 0) {
+        lastSubmission = Math.max(...timestamps).toString();
+      }
+    } catch (e) {
+      console.error('Error parsing submission calendar:', e);
+    }
+  }
+
+  return {
+    easy,
+    medium,
+    hard,
+    total,
+    ranking,
+    avatar,
+    country,
+    recentSubmissions: [], // Not available from public API
+    streak,
+    lastSubmission,
+  };
 }
 
 export async function updateDailyStatsForUser(userId: number, leetcodeUsername: string) {

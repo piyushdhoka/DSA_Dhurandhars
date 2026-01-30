@@ -4,7 +4,7 @@ export const users = pgTable('users', {
   id: serial('id').primaryKey(),
   name: varchar('name', { length: 255 }).notNull(),
   email: varchar('email', { length: 255 }).notNull().unique(),
-  password: varchar('password', { length: 255 }), // For legacy, can be removed
+  // NOTE: password field removed - app uses Google OAuth only
   leetcodeUsername: varchar('leetcode_username', { length: 255 }).notNull().unique(),
   github: varchar('github', { length: 255 }).notNull(),
   linkedin: varchar('linkedin', { length: 255 }),
@@ -51,20 +51,6 @@ export const settings = pgTable('settings', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
 
-export const messageTemplates = pgTable('message_templates', {
-  id: serial('id').primaryKey(),
-  type: varchar('type', { length: 32 }).notNull(),
-  name: varchar('name', { length: 255 }).notNull(),
-  subject: varchar('subject', { length: 255 }),
-  content: text('content').notNull(),
-  variables: jsonb('variables').default([]),
-  isActive: boolean('is_active').default(true),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
-}, (table) => ({
-  uniq: uniqueIndex('type_name_idx').on(table.type, table.name),
-}));
-
 export const dailyStats = pgTable('daily_stats', {
   id: serial('id').primaryKey(),
   userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
@@ -95,5 +81,3 @@ export type GroupMember = typeof groupMembers.$inferSelect;
 export type NewGroupMember = typeof groupMembers.$inferInsert;
 export type Setting = typeof settings.$inferSelect;
 export type NewSetting = typeof settings.$inferInsert;
-export type MessageTemplate = typeof messageTemplates.$inferSelect;
-export type NewMessageTemplate = typeof messageTemplates.$inferInsert;

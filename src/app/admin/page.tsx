@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,9 +18,6 @@ import {
   Clock,
   Zap,
   Shield,
-  Edit,
-  Save,
-  X,
   LogOut
 } from "lucide-react";
 
@@ -32,8 +29,7 @@ export default function AdminPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [users, setUsers] = useState<any[]>([]);
-  const [templates, setTemplates] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'messages' | 'templates' | 'settings'>('messages');
+  const [activeTab, setActiveTab] = useState<'messages' | 'settings'>('messages');
 
   // Form states
   const [emailSubject, setEmailSubject] = useState("DSA Grinders - Custom Message");
@@ -41,12 +37,6 @@ export default function AdminPage() {
   const [whatsappMessage, setWhatsappMessage] = useState("");
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [messageType, setMessageType] = useState<'email' | 'whatsapp' | 'both'>('both');
-
-  // Template editing states
-  const [editingTemplate, setEditingTemplate] = useState<any | null>(null);
-  const [templateContent, setTemplateContent] = useState("");
-  const [templateSubject, setTemplateSubject] = useState("");
-  const [templateName, setTemplateName] = useState("");
 
   // Settings states
   const [settings, setSettings] = useState<any>(null);
@@ -93,7 +83,6 @@ export default function AdminPage() {
   useEffect(() => {
     if (isAdmin && effectiveToken) {
       fetchUsers();
-      fetchTemplates();
       fetchSettings();
     }
   }, [isAdmin, effectiveToken]);
@@ -152,24 +141,6 @@ export default function AdminPage() {
       setError(err.message);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const fetchTemplates = async () => {
-    if (!effectiveToken) return;
-    try {
-      const res = await fetch("/api/admin/templates", {
-        headers: { Authorization: `Bearer ${effectiveToken}` }
-      });
-
-      if (!res.ok) {
-        throw new Error("Failed to fetch templates");
-      }
-
-      const data = await res.json();
-      setTemplates(data.templates || []);
-    } catch (err: any) {
-      setError(err.message);
     }
   };
 
@@ -341,60 +312,6 @@ export default function AdminPage() {
     } finally {
       setIsSending(false);
     }
-  };
-
-  const updateTemplate = async (template: any) => {
-    setIsSending(true);
-    setError(null);
-    setSuccess(null);
-
-    try {
-      const res = await fetch("/api/admin/templates", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${effectiveToken}`
-        },
-        body: JSON.stringify({
-          id: template.id,
-          type: template.type,
-          name: templateName || template.name,
-          subject: templateSubject || template.subject,
-          content: templateContent || template.content,
-          variables: template.variables,
-          isActive: template.isActive,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to update template");
-      }
-
-      setSuccess("Template updated successfully!");
-      setEditingTemplate(null);
-      fetchTemplates();
-
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setIsSending(false);
-    }
-  };
-
-  const startEditingTemplate = (template: any) => {
-    setEditingTemplate(template);
-    setTemplateName(template.name);
-    setTemplateSubject(template.subject || "");
-    setTemplateContent(template.content);
-  };
-
-  const cancelEditingTemplate = () => {
-    setEditingTemplate(null);
-    setTemplateName("");
-    setTemplateSubject("");
-    setTemplateContent("");
   };
 
   const sendCustomMessages = async () => {
@@ -614,7 +531,6 @@ export default function AdminPage() {
           <div className="bg-gray-100 rounded-full p-1 flex">
             {[
               { key: 'messages', label: 'Send Messages', icon: Send },
-              { key: 'templates', label: 'Templates', icon: SettingsIcon },
               { key: 'settings', label: 'Settings', icon: Clock }
             ].map(({ key, label, icon: Icon }) => (
               <button
@@ -732,24 +648,6 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* Templates Tab */}
-        {activeTab === 'templates' && (
-          <div className="space-y-6">
-            {templates.map(t => (
-              <div key={t.id} className="bg-white rounded-3xl border p-6 flex justify-between items-start gap-4">
-                <div className="space-y-2 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 rounded bg-gray-100 text-[10px] font-bold uppercase tracking-wider">{t.type}</span>
-                    <h3 className="font-bold">{t.name}</h3>
-                  </div>
-                  <p className="text-sm text-gray-500 whitespace-pre-wrap line-clamp-3">{t.content}</p>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => startEditingTemplate(t)}><Edit className="w-4 h-4 mr-2" /> Edit</Button>
-              </div>
-            ))}
-          </div>
-        )}
-
         {/* Settings Tab */}
         {activeTab === 'settings' && (
           <div className="bg-white rounded-3xl border p-8 space-y-8">
@@ -792,29 +690,7 @@ export default function AdminPage() {
             </div>
           </div>
         )}
-
       </main>
-
-      {/* Editing Template Modal overlay could be added here if needed, keeping it simple for now */}
-      {editingTemplate && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl w-full max-w-2xl p-8 max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold">Edit Template</h2>
-              <Button variant="ghost" onClick={cancelEditingTemplate}><X /></Button>
-            </div>
-            <div className="space-y-4">
-              <Input placeholder="Name" value={templateName} onChange={e => setTemplateName(e.target.value)} />
-              <Input placeholder="Subject" value={templateSubject} onChange={e => setTemplateSubject(e.target.value)} />
-              <Textarea placeholder="Content" rows={10} value={templateContent} onChange={e => setTemplateContent(e.target.value)} />
-              <div className="flex gap-2">
-                <Button className="flex-1" onClick={() => updateTemplate(editingTemplate)}>Save Changes</Button>
-                <Button className="flex-1" variant="outline" onClick={cancelEditingTemplate}>Cancel</Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

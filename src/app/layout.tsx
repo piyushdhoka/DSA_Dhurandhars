@@ -8,12 +8,14 @@ import SplashScreen from "@/components/SplashScreen";
 import OnboardingModal from "@/components/OnboardingModal";
 
 export const metadata: Metadata = {
-  title: "DSA Grinders | Grind LeetCode Together",
-  description: "Compete with friends, track your DSA progress, climb the leaderboard!",
+  title: "DSA Grinders | Track LeetCode & Compete with Friends",
+  description: "The ultimate DSA tracking tool. Compete with friends, track your LeetCode progress, and stay motivated with automated roasts!",
+  keywords: ["DSA", "LeetCode", "Data Structures", "Algorithms", "Coding Competition", "Placement Preparation"],
+  authors: [{ name: "DSA Grinders Team" }],
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: "DSA Grinders",
   },
   formatDetection: {
@@ -21,6 +23,7 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
+      { url: "/logo.ico", type: "image/x-icon" },
       { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
       { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
     ],
@@ -29,6 +32,27 @@ export const metadata: Metadata = {
       { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
     ],
   },
+  openGraph: {
+    title: "DSA Grinders | Track LeetCode & Compete with Friends",
+    description: "Compete with friends, track your DSA progress, and stay motivated!",
+    url: "https://dsa-grinders.vercel.app",
+    siteName: "DSA Grinders",
+    images: [
+      {
+        url: "/logo.png",
+        width: 800,
+        height: 800,
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "DSA Grinders | Track LeetCode & Compete with Friends",
+    description: "Compete with friends, track your DSA progress, and stay motivated!",
+    images: ["/logo.png"],
+  },
 };
 
 export const viewport: Viewport = {
@@ -36,7 +60,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   userScalable: true,
-  themeColor: "#1a73e8",
+  themeColor: "#ef4444",
 };
 
 export default function RootLayout({

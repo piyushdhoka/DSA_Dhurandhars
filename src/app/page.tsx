@@ -6,18 +6,26 @@ import { useAuth } from '@/components/AuthContext'
 import Image from 'next/image'
 import { MorphingText } from '@/components/ui/morphing-text'
 import { Particles } from '@/components/ui/particles'
+import { Loader2 } from 'lucide-react'
 
 export default function Home() {
   const { user, signInWithGoogle, isLoading } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
-    if (user) {
+    if (!isLoading && user) {
       router.push('/home')
     }
-  }, [user, router])
+  }, [user, isLoading, router])
 
-  if (user) return null
+  // Show loading while checking auth or if user is logged in (redirecting)
+  if (isLoading || user) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      </div>
+    )
+  }
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-white">
