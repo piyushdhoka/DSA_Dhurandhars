@@ -6,12 +6,13 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/components/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Loader2, RefreshCw, Trophy, Target, Crown, LogOut, Github, Linkedin, Users, Plus, Hash, Copy, Settings, ChevronRight, Flame, Medal } from "lucide-react";
+import { Loader2, RefreshCw, Trophy, Target, Crown, LogOut, Github, Linkedin, Users, Plus, Hash, Copy, Settings, ChevronRight, Flame, Medal, Link as LinkIcon, Share2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea"; // Assuming it exists, if not I'll use Input or standard textarea
+import { toast } from "sonner";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 
 interface LeaderboardEntry {
@@ -278,6 +279,49 @@ export default function HomePage() {
             setIsSubmitting(false);
         }
     };
+
+    // Get base URL for share links (works on localhost and Vercel)
+    const getBaseUrl = () => {
+        if (typeof window !== 'undefined') {
+            return window.location.origin;
+        }
+        return process.env.NEXT_PUBLIC_APP_URL || 'https://dsa-grinders.vercel.app';
+    };
+
+    // Handle share link generation and copy
+    const handleShareGroup = async (group: Group) => {
+        try {
+            const baseUrl = getBaseUrl();
+            const shareUrl = `${baseUrl}?join=${group.code}`;
+
+            await navigator.clipboard.writeText(shareUrl);
+            toast.success('Share link copied!', {
+                description: 'Anyone with this link can join your group',
+                duration: 3000,
+            });
+        } catch (error) {
+            toast.error('Failed to copy link', {
+                description: 'Please try again',
+                duration: 3000,
+            });
+        }
+    };
+
+    // Check for join code in URL parameters
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            const joinCodeParam = params.get('join');
+
+            if (joinCodeParam) {
+                setJoinCode(joinCodeParam.toUpperCase());
+                setIsJoinGroupOpen(true);
+                // Clean URL after opening modal
+                window.history.replaceState({}, '', window.location.pathname);
+            }
+        }
+    }, []);
+
     useEffect(() => {
         if (!authLoading && !user) {
             router.push('/');
@@ -459,17 +503,29 @@ export default function HomePage() {
                         </div>
 
                         {activeGroup && (
-                            <div
-                                className="flex items-center gap-2 text-sm bg-blue-50/50 px-3 py-1.5 rounded-full border border-blue-100 cursor-pointer hover:border-blue-300 transition-colors group/code animate-in fade-in zoom-in-95 self-start sm:self-auto"
-                                onClick={() => {
-                                    navigator.clipboard.writeText(activeGroup.code);
-                                    // TODO: Add toast
-                                }}
-                                title="Click to copy invite code"
-                            >
-                                <span className="text-blue-600 text-xs uppercase font-medium tracking-wide mr-1">Invite Code:</span>
-                                <span className="font-mono font-bold text-blue-800 tracking-wider font-size-xs">{activeGroup.code}</span>
-                                <Copy className="w-3.5 h-3.5 text-blue-400 group-hover/code:text-blue-600 ml-1" />
+                            <div className="flex items-center gap-2 animate-in fade-in zoom-in-95 self-start sm:self-auto">
+                                <div
+                                    className="flex items-center gap-2 text-sm bg-blue-50/50 px-3 py-1.5 rounded-full border border-blue-100 cursor-pointer hover:border-blue-300 transition-colors group/code"
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(activeGroup.code);
+                                        toast.success('Code copied!', { duration: 2000 });
+                                    }}
+                                    title="Click to copy invite code"
+                                >
+                                    <span className="text-blue-600 text-xs uppercase font-medium tracking-wide mr-1">Code:</span>
+                                    <span className="font-mono font-bold text-blue-800 tracking-wider font-size-xs">{activeGroup.code}</span>
+                                    <Copy className="w-3.5 h-3.5 text-blue-400 group-hover/code:text-blue-600 ml-1" />
+                                </div>
+                                <Button
+                                    variant="default"
+                                    size="sm"
+                                    onClick={() => handleShareGroup(activeGroup)}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-4 py-1.5 h-auto text-xs font-medium flex items-center gap-2 shadow-sm"
+                                    title="Generate and copy share link"
+                                >
+                                    <Share2 className="w-3.5 h-3.5" />
+                                    <span className="hidden sm:inline">Share Link</span>
+                                </Button>
                             </div>
                         )}
                     </div>
@@ -590,7 +646,7 @@ export default function HomePage() {
                                                 >
                                                     {entry.name}
                                                 </a>
-                                                <div className="hidden sm:flex items-center gap-2">
+                                                <div className="hidden sm:flex items-center gap-1">
                                                     {entry.github && (
                                                         <a
                                                             href={entry.github}
@@ -671,7 +727,7 @@ export default function HomePage() {
                                                                         @{entry.leetcodeUsername}
                                                                     </a>
                                                                 </div>
-                                                                <div className="flex gap-2.5 mt-2">
+                                                                <div className="flex gap-1.5 mt-2">
                                                                     {entry.github && (
                                                                         <a href={entry.github} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg bg-gray-50 text-gray-400 hover:text-gray-900 hover:bg-gray-100 transition-all border border-gray-100" title="GitHub">
                                                                             <Github className="w-4 h-4" />
