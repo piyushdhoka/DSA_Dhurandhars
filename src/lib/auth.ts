@@ -4,11 +4,17 @@ import { users, User } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { supabase } from './supabase';
 import jwt from 'jsonwebtoken';
+import type { AuthenticatedUser } from '@/types';
 
-const ADMIN_SESSION_SECRET = process.env.ADMIN_SESSION_SECRET;
+// Environment variable with fallback for development
+const ADMIN_SESSION_SECRET = process.env.ADMIN_SESSION_SECRET || (process.env.NODE_ENV !== 'production' ? 'dev-secret-change-in-production' : '');
 
-if (!ADMIN_SESSION_SECRET && process.env.NODE_ENV === 'production') {
-    throw new Error('ADMIN_SESSION_SECRET environment variable is required in production');
+if (!process.env.ADMIN_SESSION_SECRET) {
+    if (process.env.NODE_ENV === 'production') {
+        throw new Error('ADMIN_SESSION_SECRET environment variable is required in production');
+    } else {
+        console.warn('ADMIN_SESSION_SECRET not set - using development fallback. Set this in production!');
+    }
 }
 
 export async function getCurrentUser(req: NextRequest) {
@@ -22,9 +28,9 @@ export async function getCurrentUser(req: NextRequest) {
     try {
         // 1. Try manual admin token first
         try {
-            const decoded = jwt.verify(token, ADMIN_SESSION_SECRET!) as any;
+            const decoded = jwt.verify(token, ADMIN_SESSION_SECRET!) as { role?: string; manual?: boolean };
             if (decoded && decoded.role === 'admin' && decoded.manual) {
-                return { id: 'manual_admin', name: 'Manual Admin', role: 'admin', isProfileIncomplete: false };
+                return { id: 'manual_admin', name: 'Manual Admin', role: 'admin' as const, isProfileIncomplete: false as const };
             }
         } catch (e) {
             // Not a manual token, continue to Supabase
@@ -60,8 +66,15 @@ export function isProfileIncomplete(user: User | any): boolean {
     );
 }
 
-export function requireAuth(handler: (req: NextRequest, user: any, context?: any) => Promise<Response>) {
-    return async (req: NextRequest, context?: any) => {
+// Type for authenticated users (manual admin or database user)
+type ManualAdmin = { id: string; name: string; role: 'admin'; isProfileIncomplete: false };
+type DatabaseUser = User & { isProfileIncomplete: boolean };
+export type AuthUser = ManualAdmin | DatabaseUser;
+
+type AuthenticatedHandler = (req: NextRequest, user: AuthUser, context?: unknown) => Promise<Response>;
+
+export function requireAuth(handler: AuthenticatedHandler) {
+    return async (req: NextRequest, context?: unknown) => {
         const user = await getCurrentUser(req);
         if (!user) {
             return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -84,7 +97,9 @@ export function requireAuth(handler: (req: NextRequest, user: any, context?: any
 }
 
 // Admin auth middleware - checks for admin role in database
-export function requireAdmin(handler: (req: NextRequest, user: any) => Promise<Response>) {
+type AdminHandler = (req: NextRequest, user: AuthUser) => Promise<Response>;
+
+export function requireAdmin(handler: AdminHandler) {
     return async (req: NextRequest) => {
         const user = await getCurrentUser(req);
 

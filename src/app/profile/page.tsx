@@ -8,10 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, ArrowLeft, Save, Phone, User, Github, Linkedin, Globe, Settings } from "lucide-react";
+import { Loader2, ArrowLeft, Save, Phone, Github, Linkedin, Settings } from "lucide-react";
 
 export default function ProfilePage() {
-    const { user, token, isLoading: authLoading, updateUser } = useAuth();
+    const { user, token, isLoading: authLoading } = useAuth();
     const router = useRouter();
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);

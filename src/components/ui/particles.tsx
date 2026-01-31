@@ -79,7 +79,7 @@ type Circle = {
 
 export const Particles: React.FC<ParticlesProps> = ({
   className = "",
-  quantity = 100,
+  quantity = 50, // Reduced from 100 for better performance
   staticity = 50,
   ease = 50,
   size = 0.4,
@@ -98,6 +98,7 @@ export const Particles: React.FC<ParticlesProps> = ({
   const canvasSize = useRef<{ w: number; h: number }>({ w: 0, h: 0 })
   // Fix hydration mismatch - only use devicePixelRatio on client
   const [isMounted, setIsMounted] = useState(false)
+  const [isVisible, setIsVisible] = useState(true) // Track page visibility
   const dpr = isMounted && typeof window !== "undefined" ? window.devicePixelRatio : 1
   const rafID = useRef<number | null>(null)
   const resizeTimeout = useRef<NodeJS.Timeout | null>(null)
@@ -105,6 +106,17 @@ export const Particles: React.FC<ParticlesProps> = ({
   // Set mounted state to avoid hydration mismatch
   useEffect(() => {
     setIsMounted(true)
+  }, [])
+
+  // Handle page visibility to pause animation when tab is hidden
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      setIsVisible(!document.hidden)
+    }
+    document.addEventListener("visibilitychange", handleVisibilityChange)
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
+    }
   }, [])
 
   useEffect(() => {
@@ -115,7 +127,9 @@ export const Particles: React.FC<ParticlesProps> = ({
       context.current = canvasRef.current.getContext("2d")
     }
     initCanvas()
-    animate()
+    if (isVisible) {
+      animate()
+    }
 
     const handleResize = () => {
       if (resizeTimeout.current) {
@@ -137,7 +151,7 @@ export const Particles: React.FC<ParticlesProps> = ({
       }
       window.removeEventListener("resize", handleResize)
     }
-  }, [color, isMounted])
+  }, [color, isMounted, isVisible])
 
   useEffect(() => {
     if (!isMounted) return

@@ -5,9 +5,11 @@ import { groups, groupMembers, users, dailyStats, settings } from '@/db/schema';
 import { eq, and, desc, sql } from 'drizzle-orm';
 import { getTodayDate } from '@/lib/utils';
 
-export const GET = requireAuth(async (req: NextRequest, user: any, { params }: { params: { id: string } }) => {
+export const GET = requireAuth(async (req: NextRequest, user, context) => {
     try {
-        const { id: groupIdStr } = await params;
+        const { id: groupIdStr } = (context as { params: Promise<{ id: string }> }).params ?
+            await (context as { params: Promise<{ id: string }> }).params :
+            { id: '' };
         const groupId = parseInt(groupIdStr);
 
         if (isNaN(groupId)) {
@@ -18,6 +20,11 @@ export const GET = requireAuth(async (req: NextRequest, user: any, { params }: {
         const [group] = await db.select().from(groups).where(eq(groups.id, groupId)).limit(1);
         if (!group) {
             return NextResponse.json({ error: 'Group not found' }, { status: 404 });
+        }
+
+        // Manual admin cannot access group leaderboard
+        if (typeof user.id === 'string') {
+            return NextResponse.json({ error: 'Manual admin cannot access group leaderboard' }, { status: 403 });
         }
 
         // Verify user is a member

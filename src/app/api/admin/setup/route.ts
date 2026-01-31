@@ -7,10 +7,14 @@ import { eq } from 'drizzle-orm';
 export const GET = requireAuth(async (req, user) => {
   try {
    
+    if (typeof user.id === 'string') {
+      return NextResponse.json({ error: 'Manual admin cannot use this endpoint' }, { status: 400 });
+    }
+
     const url = new URL(req.url);
     const secret = url.searchParams.get('secret');
 
-  
+
     if (secret !== 'dsa-admin-claim') {
       return NextResponse.json({ error: 'Invalid secret key' }, { status: 403 });
     }

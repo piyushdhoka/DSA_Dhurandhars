@@ -56,7 +56,7 @@ export const GET = requireAuth(async (req, user) => {
       })),
       adminUser: {
         name: user.name,
-        email: user.email
+        email: 'email' in user ? user.email : 'manual-admin@localhost'
       }
     });
 

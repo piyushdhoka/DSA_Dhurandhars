@@ -3,11 +3,14 @@ export interface DynamicContent {
     fullMessage: string;
 }
 
+// Base URL for the app (used in AI-generated messages)
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://dsa-grinders.vercel.app';
+
 export async function generateDynamicRoast(userName: string): Promise<DynamicContent | null> {
     const apiKey = process.env.OPENROUTER_API_KEY;
 
     if (!apiKey) {
-        console.warn('AI: OPENROUTER_API_KEY is missing');
+        console.warn('AI: OPENROUTER_API_KEY is missing - AI roast generation disabled');
         return null;
     }
 
@@ -17,7 +20,7 @@ export async function generateDynamicRoast(userName: string): Promise<DynamicCon
             headers: {
                 "Authorization": `Bearer ${apiKey}`,
                 "Content-Type": "application/json",
-                "HTTP-Referer": "https://dsa-grinders.vercel.app/",
+                "HTTP-Referer": SITE_URL,
                 "X-Title": "DSA Grinders",
             },
             body: JSON.stringify({
@@ -35,7 +38,7 @@ export async function generateDynamicRoast(userName: string): Promise<DynamicCon
                         OUTPUT FORMAT (Strict JSON):
                         {
                           "dashboardRoast": "A 1-sentence extremely toxic roast in Hinglish for the dashboard UI. Use [NAME] to refer to the user.",
-                          "fullMessage": "Generate the ENTIRE message. Start with a toxic/hostile greeting for [NAME]. Then write a 3-4 sentence hyper-toxic and abusive paragraph shaming them for not solving problems today. No hardcoded headers like 'Wake up'. End it with: \\n\\n💻 Solve: https://leetcode.com/problemset/ \\n🌐 Track: https://dsa-grinders.vercel.app/ \\n\\nDSA Grinder Team 💀"
+                          "fullMessage": "Generate the ENTIRE message. Start with a toxic/hostile greeting for [NAME]. Then write a 3-4 sentence hyper-toxic and abusive paragraph shaming them for not solving problems today. No hardcoded headers like 'Wake up'. End it with: \\n\\n💻 Solve: https://leetcode.com/problemset/ \\n🌐 Track: ${SITE_URL} \\n\\nDSA Grinder Team 💀"
                         }`
                     },
                     {

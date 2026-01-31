@@ -16,8 +16,16 @@ interface UserUpdatePayload {
   phoneNumber?: string | null;
 }
 
-export const PUT = requireAuth(async (req: NextRequest, user: User) => {
+export const PUT = requireAuth(async (req: NextRequest, user) => {
   try {
+    // Manual admin cannot update profile through this endpoint
+    if (typeof user.id === 'string') {
+      return NextResponse.json(
+        createErrorResponse('Manual admin cannot update profile', 'FORBIDDEN'),
+        { status: 403 }
+      );
+    }
+
     const body = await req.json();
 
     // Validate request body with Zod
