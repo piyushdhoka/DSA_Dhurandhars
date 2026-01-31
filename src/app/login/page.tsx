@@ -40,7 +40,7 @@ export default function AuthPage() {
     }
 
     return (
-        <div className="min-h-screen bg-[#fafafa] flex flex-col items-center justify-center p-4 font-sans selection:bg-blue-100">
+        <div className="min-h-screen bg-[#F1F3F4] flex flex-col items-center justify-center p-4 font-sans selection:bg-[#D2E3FC]">
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -57,26 +57,26 @@ export default function AuthPage() {
                     >
                         <Image src="/logo.png" alt="DSA Grinders" width={96} height={96} className="object-contain" priority />
                     </motion.div>
-                    <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-                        DSA <span className="text-blue-600 font-extrabold">Grinders</span>
+                    <h1 className="text-3xl font-bold text-[#202124] tracking-tight">
+                        DSA <span className="text-[#4285F4] font-extrabold">Grinders</span>
                     </h1>
-                    <p className="text-gray-500 mt-2 text-sm font-medium">
+                    <p className="text-[#5F6368] mt-2 text-sm font-medium">
                         Log in to track your LeetCode progress and compete.
                     </p>
                 </div>
 
-                <div className="bg-white rounded-[32px] border border-gray-100 p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+                <div className="bg-white rounded-[32px] border border-[#E8EAED] p-8 shadow-[0_1px_2px_0_rgba(60,64,67,0.3),0_1px_3px_1px_rgba(60,64,67,0.15)]">
                     <div className="space-y-6">
                         <div className="text-center space-y-2">
-                            <h2 className="text-xl font-semibold text-gray-800">Welcome Back</h2>
-                            <p className="text-xs text-gray-400">Please sign in with your Google account</p>
+                            <h2 className="text-xl font-semibold text-[#202124]">Welcome Back</h2>
+                            <p className="text-xs text-[#5F6368]">Please sign in with your Google account</p>
                         </div>
 
                         {/* Primary Button: Choose Account */}
                         <Button
                             onClick={() => handleGoogleSignIn()}
                             disabled={isRedirecting || authLoading}
-                            className="w-full h-14 bg-blue-600 hover:bg-blue-700 text-white border-0 rounded-2xl shadow-md transition-all flex items-center justify-center gap-3 active:scale-[0.98] disabled:opacity-70 group"
+                            className="w-full h-14 bg-[#4285F4] hover:bg-[#174EA6] text-white border-0 rounded-2xl shadow-[0_1px_2px_0_rgba(60,64,67,0.3),0_2px_6px_2px_rgba(60,64,67,0.15)] transition-all flex items-center justify-center gap-3 active:scale-[0.98] disabled:opacity-70 group hover:shadow-[0_1px_3px_0_rgba(60,64,67,0.3),0_4px_8px_3px_rgba(60,64,67,0.15)]"
                         >
                             {isRedirecting || authLoading ? (
                                 <Loader2 className="h-5 w-5 animate-spin text-white" />
@@ -95,9 +95,9 @@ export default function AuthPage() {
 
 
                         <div className="flex items-center gap-4 py-2">
-                            <div className="h-px bg-gray-100 flex-1"></div>
-                            <span className="text-[10px] uppercase font-bold text-gray-300 tracking-widest">Secure Login</span>
-                            <div className="h-px bg-gray-100 flex-1"></div>
+                            <div className="h-px bg-[#E8EAED] flex-1"></div>
+                            <span className="text-[10px] uppercase font-bold text-[#9AA0A6] tracking-widest">Secure Login</span>
+                            <div className="h-px bg-[#E8EAED] flex-1"></div>
                         </div>
 
                         <p className="text-[11px] text-gray-400 text-center px-4 leading-relaxed">

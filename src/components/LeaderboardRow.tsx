@@ -19,21 +19,21 @@ export default function LeaderboardRow({ entry, index, isCurrentUser }: Leaderbo
                 hidden: { opacity: 0, y: 10 },
                 visible: { opacity: 1, y: 0 }
             }}
-            className={`px-4 md:px-8 py-5 flex items-center gap-4 md:gap-8 transition-all duration-300 hover:bg-muted/50 relative border-b border-border last:border-0 ${isCurrentUser ? 'bg-primary/5' : ''
+            className={`px-4 md:px-8 py-5 flex items-center gap-4 md:gap-8 transition-all duration-300 hover:bg-[#F1F3F4] dark:hover:bg-muted/50 relative border-b border-[#E8EAED] dark:border-border last:border-0 ${isCurrentUser ? 'bg-[#D2E3FC]/30 dark:bg-primary/5 border-l-4 border-l-[#4285F4]' : ''
                 }`}
         >
             {/* Rank Indicator */}
             <div className="w-8 md:w-12 flex items-center justify-center shrink-0">
                 {index === 0 ? (
                     <div className="relative">
-                        <Trophy className="w-6 h-6 md:w-7 md:h-7 text-yellow-500" />
+                        <Trophy className="w-6 h-6 md:w-7 md:h-7 text-[#FBBC04]" />
                     </div>
                 ) : index === 1 ? (
-                    <Medal className="w-6 h-6 md:w-7 md:h-7 text-gray-400" />
+                    <Medal className="w-6 h-6 md:w-7 md:h-7 text-[#9AA0A6]" />
                 ) : index === 2 ? (
-                    <Medal className="w-6 h-6 md:w-7 md:h-7 text-amber-600" />
+                    <Medal className="w-6 h-6 md:w-7 md:h-7 text-[#E37400]" />
                 ) : (
-                    <span className="text-xs md:text-base font-black text-muted-foreground">#{index + 1}</span>
+                    <span className="text-xs md:text-base font-black text-[#5F6368] dark:text-muted-foreground">#{index + 1}</span>
                 )}
             </div>
 
@@ -42,7 +42,7 @@ export default function LeaderboardRow({ entry, index, isCurrentUser }: Leaderbo
                 <HoverCard openDelay={200}>
                     <HoverCardTrigger asChild>
                         <div className="relative shrink-0 cursor-pointer group/avatar">
-                            <div className={`w-12 h-12 md:w-14 md:h-14 rounded-2xl overflow-hidden bg-card shrink-0 border-2 transition-all duration-300 group-hover/avatar:scale-105 ${isCurrentUser ? 'border-primary' : 'border-border'
+                            <div className={`w-12 h-12 md:w-14 md:h-14 rounded-2xl overflow-hidden bg-white dark:bg-card shrink-0 border-2 transition-all duration-300 group-hover/avatar:scale-105 ${isCurrentUser ? 'border-[#4285F4]' : 'border-[#E8EAED] dark:border-border'
                                 }`}>
                                 {entry.avatar ? (
                                     <img src={entry.avatar} alt={entry.name} className="w-full h-full object-cover" />
@@ -72,13 +72,13 @@ export default function LeaderboardRow({ entry, index, isCurrentUser }: Leaderbo
                             </div>
 
                             <div className="grid grid-cols-2 gap-3 mb-6 relative z-10">
-                                <div className="bg-muted rounded-2xl p-4 border border-border">
-                                    <div className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] mb-1">Global Rank</div>
-                                    <div className="text-xl font-black text-foreground">#{entry.ranking?.toLocaleString() || '—'}</div>
+                                <div className="bg-[#F1F3F4] dark:bg-muted rounded-2xl p-4 border border-[#E8EAED] dark:border-border">
+                                    <div className="text-[10px] text-[#5F6368] dark:text-muted-foreground font-black uppercase tracking-[0.2em] mb-1">Global Rank</div>
+                                    <div className="text-xl font-black text-[#202124] dark:text-foreground">#{entry.ranking?.toLocaleString() || '—'}</div>
                                 </div>
-                                <div className="bg-primary/10 rounded-2xl p-4 border border-primary/20">
-                                    <div className="text-[10px] text-primary font-black uppercase tracking-[0.2em] mb-1">Daily Pts</div>
-                                    <div className="text-xl font-black text-primary">+{entry.todayPoints}</div>
+                                <div className="bg-[#D2E3FC] dark:bg-primary/10 rounded-2xl p-4 border border-[#4285F4]/20">
+                                    <div className="text-[10px] text-[#174EA6] dark:text-primary font-black uppercase tracking-[0.2em] mb-1">Daily Pts</div>
+                                    <div className="text-xl font-black text-[#174EA6] dark:text-primary">+{entry.todayPoints}</div>
                                 </div>
                             </div>
 
@@ -89,9 +89,9 @@ export default function LeaderboardRow({ entry, index, isCurrentUser }: Leaderbo
                                 </div>
                                 <div className="space-y-3.5 px-1">
                                     {[
-                                        { label: 'Easy', count: entry.easy, color: 'bg-emerald-500', width: (entry.easy || 0) / (entry.totalProblems || 1) * 100 },
-                                        { label: 'Medium', count: entry.medium, color: 'bg-amber-500', width: (entry.medium || 0) / (entry.totalProblems || 1) * 100 },
-                                        { label: 'Hard', count: entry.hard, color: 'bg-rose-500', width: (entry.hard || 0) / (entry.totalProblems || 1) * 100 }
+                                        { label: 'Easy', count: entry.easy, color: 'bg-[#34A853]', width: (entry.easy || 0) / (entry.totalProblems || 1) * 100 },
+                                        { label: 'Medium', count: entry.medium, color: 'bg-[#FBBC04]', width: (entry.medium || 0) / (entry.totalProblems || 1) * 100 },
+                                        { label: 'Hard', count: entry.hard, color: 'bg-[#EA4335]', width: (entry.hard || 0) / (entry.totalProblems || 1) * 100 }
                                     ].map(stat => (
                                         <div key={stat.label} className="space-y-1.5">
                                             <div className="flex justify-between text-[9px] font-black text-muted-foreground uppercase tracking-widest">

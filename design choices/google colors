@@ -1,0 +1,48 @@
+Google News Color Palette
+==========================
+
+
+3	+
+4	+
+Fifteen core colors make up the color palette of Google News.
+5	+
+Below are the exact values for these colors across three different color spaces.
+6	+
+7	+
+┌────────────────┬──────────┬─────────────────┐
+8	+
+│ Color          │ Hex      │ RGB             │
+9	+
+├────────────────┼──────────┼─────────────────┤
+10	+
+│ Blue           │ #174EA6  │ 23, 78, 166     │
+11	+
+│ Red            │ #A50E0E  │ 165, 14, 14     │
+12	+
+│ Orange         │ #E37400  │ 227, 116, 0     │
+13	+
+│ Green          │ #0D652D  │ 32, 33, 36      │
+14	+
+│ Medium Blue    │ #4285F4  │ 66, 103, 210    │
+15	+
+│ Medium Red     │ #EA4335  │ 234, 67, 53     │
+16	+
+│ Yellow         │ #FBBC04  │ 251, 188, 4     │
+17	+
+│ Medium Green   │ #34A853  │ 52, 168, 83     │
+18	+
+│ Light Blue     │ #D2E3FC  │ 210, 227, 252   │
+19	+
+│ Light Red      │ #FAD2CF  │ 250, 210, 207   │
+20	+
+│ Light Yellow   │ #FEEFC3  │ 254, 239, 195   │
+21	+
+│ Light Green    │ #CEEAD6  │ 206, 234, 214   │
+22	+
+│ Light Grey     │ #F1F3F4  │ 241, 243, 244   │
+23	+
+│ Grey           │ #9AA0A6  │ 154, 160, 166   │
+24	+
+│ Black          │ #202124  │ 32, 33, 36      │
+25	+
+└────────────────┴──────────┴─────────────────┘

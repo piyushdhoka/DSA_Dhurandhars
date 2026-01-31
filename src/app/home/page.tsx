@@ -330,14 +330,14 @@ export default function HomePage() {
     const myRank = currentUserEntry?.rank || '-';
 
     return (
-        <div className="min-h-screen bg-background text-foreground font-sans">
+        <div className="min-h-screen bg-[#F1F3F4] dark:bg-black text-foreground font-sans">
             {/* Header - Google Style Navbar */}
-            <header className="fixed top-0 inset-x-0 bg-background/90 backdrop-blur-md z-50 border-b border-border">
+            <header className="fixed top-0 inset-x-0 bg-white/95 dark:bg-black/95 backdrop-blur-md z-50 border-b border-[#E8EAED] dark:border-[#3C4043] shadow-[0_1px_2px_0_rgba(60,64,67,0.3),0_1px_3px_1px_rgba(60,64,67,0.15)] dark:shadow-none">
                 <div className="max-w-[1200px] mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-2 md:gap-3">
                         <Image src="/logo.png" alt="Logo" width={32} height={32} className="object-contain md:w-10 md:h-10" priority />
-                        <span className="text-xl md:text-2xl font-medium tracking-tight text-gray-500">
-                            DSA <span className="text-gray-900 font-semibold">Grinders</span>
+                        <span className="text-xl md:text-2xl font-medium tracking-tight text-[#5F6368] dark:text-gray-400">
+                            DSA <span className="text-[#202124] dark:text-white font-semibold">Grinders</span>
                         </span>
                     </div>
 
@@ -347,7 +347,7 @@ export default function HomePage() {
                             size="sm"
                             onClick={refreshStats}
                             disabled={isRefreshing || (lastRefresh !== null && Date.now() - lastRefresh.getTime() < 60000)}
-                            className={`text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-blue-600 font-medium rounded-full px-2 md:px-4 ${isRefreshing || (lastRefresh !== null && Date.now() - lastRefresh.getTime() < 60000) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            className={`text-[#5F6368] dark:text-gray-300 hover:bg-[#F1F3F4] dark:hover:bg-gray-800 hover:text-[#4285F4] font-medium rounded-full px-2 md:px-4 ${isRefreshing || (lastRefresh !== null && Date.now() - lastRefresh.getTime() < 60000) ? 'opacity-50 cursor-not-allowed' : ''}`}
                             title={lastRefresh && Date.now() - lastRefresh.getTime() < 60000 ? "Please wait before syncing again" : "Sync Leaderboard"}
                         >
                             <RefreshCw className={`h-4 w-4 md:mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
@@ -357,18 +357,18 @@ export default function HomePage() {
                             variant="ghost"
                             size="sm"
                             onClick={() => router.push('/profile')}
-                            className="text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-blue-600 font-medium rounded-full px-2 md:px-4"
+                            className="text-[#5F6368] dark:text-gray-300 hover:bg-[#F1F3F4] dark:hover:bg-gray-800 hover:text-[#4285F4] font-medium rounded-full px-2 md:px-4"
                         >
                             <span className="hidden md:inline">Profile</span>
                             <Settings className="h-4 w-4 md:hidden" />
                         </Button>
                         <AnimatedThemeToggler className="h-8 w-8 md:h-9 md:w-9" />
-                        <div className="h-6 w-px bg-gray-200 dark:bg-gray-700 mx-1"></div>
+                        <div className="h-6 w-px bg-[#E8EAED] dark:bg-gray-700 mx-1"></div>
                         <Button
                             variant="ghost"
                             size="sm"
                             onClick={logout}
-                            className="text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950 rounded-full h-8 w-8 md:h-9 md:w-9 p-0"
+                            className="text-[#5F6368] hover:text-[#EA4335] hover:bg-[#FAD2CF] dark:hover:bg-red-950 rounded-full h-8 w-8 md:h-9 md:w-9 p-0"
                             title="Logout"
                         >
                             <LogOut className="h-4 w-4" />
@@ -381,7 +381,7 @@ export default function HomePage() {
 
                 {/* Personal Dashboard Overview - GROWTH & ONBOARDING focus */}
                 <div className="mb-12 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-                    <div className="bg-linear-to-br from-primary to-primary/80 rounded-[2.5rem] p-8 md:p-12 text-primary-foreground relative overflow-hidden">
+                    <div className="bg-gradient-to-br from-[#4285F4] to-[#174EA6] rounded-[2.5rem] p-8 md:p-12 text-white relative overflow-hidden shadow-[0_8px_30px_rgba(66,133,244,0.25)]">
                         {/* Decorative Circles - removed blur for cleaner look */}
                         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32" />
                         <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full -ml-24 -mb-24" />
@@ -429,7 +429,7 @@ export default function HomePage() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                     {/* Left Column: Leaderboard */}
-                    <div className="lg:col-span-8 bg-card rounded-3xl border border-border relative overflow-hidden">
+                    <div className="lg:col-span-8 bg-white dark:bg-card rounded-3xl border border-[#E8EAED] dark:border-border relative overflow-hidden shadow-[0_1px_2px_0_rgba(60,64,67,0.3),0_1px_3px_1px_rgba(60,64,67,0.15)] dark:shadow-none">
 
 
                         {/* Group Scope Selector */}
@@ -437,26 +437,26 @@ export default function HomePage() {
                             <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0 no-scrollbar">
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                        <Button variant="outline" className="h-11 px-5 bg-card border-border hover:bg-muted transition-all rounded-2xl gap-3 group">
+                                        <Button variant="outline" className="h-11 px-5 bg-white dark:bg-card border-[#E8EAED] dark:border-border hover:bg-[#F1F3F4] dark:hover:bg-muted transition-all rounded-2xl gap-3 group shadow-sm">
                                             <div className="flex flex-col items-start leading-tight">
-                                                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest group-hover:text-primary transition-colors">Scope</span>
-                                                <span className="text-sm font-bold text-foreground truncate max-w-[120px]">
+                                                <span className="text-[10px] font-black text-[#5F6368] dark:text-muted-foreground uppercase tracking-widest group-hover:text-[#4285F4] transition-colors">Scope</span>
+                                                <span className="text-sm font-bold text-[#202124] dark:text-foreground truncate max-w-[120px]">
                                                     {activeGroup ? activeGroup.name : 'Global'}
                                                 </span>
                                             </div>
-                                            <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" />
+                                            <ChevronRight className="w-4 h-4 text-[#5F6368] dark:text-muted-foreground group-hover:text-[#4285F4] group-hover:translate-x-0.5 transition-all" />
                                         </Button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="start" className="w-56 p-2">
-                                        <DropdownMenuLabel className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2.5 py-2">
+                                    <DropdownMenuContent align="start" className="w-56 p-2 bg-white dark:bg-card border-[#E8EAED] dark:border-border shadow-[0_8px_10px_1px_rgba(0,0,0,.14),0_3px_14px_2px_rgba(0,0,0,.12),0_5px_5px_-3px_rgba(0,0,0,.2)]">
+                                        <DropdownMenuLabel className="text-[10px] font-black text-[#5F6368] dark:text-gray-400 uppercase tracking-widest px-2.5 py-2">
                                             Your Communities
                                         </DropdownMenuLabel>
                                         <DropdownMenuItem
                                             onClick={() => setActiveGroup(null)}
-                                            className={`cursor-pointer flex items-center justify-between rounded-xl mb-1 ${!activeGroup ? 'bg-blue-50 text-blue-700 font-bold' : ''}`}
+                                            className={`cursor-pointer flex items-center justify-between rounded-xl mb-1 ${!activeGroup ? 'bg-[#D2E3FC] text-[#174EA6] font-bold' : ''}`}
                                         >
                                             <span className="truncate">Global</span>
-                                            {!activeGroup && <div className="w-1.5 h-1.5 rounded-full bg-blue-600" />}
+                                            {!activeGroup && <div className="w-1.5 h-1.5 rounded-full bg-[#4285F4]" />}
                                         </DropdownMenuItem>
                                         {userGroups.length > 0 && <DropdownMenuSeparator className="opacity-50" />}
                                         <div className="max-h-[200px] overflow-y-auto pr-1">
@@ -464,22 +464,22 @@ export default function HomePage() {
                                                 <DropdownMenuItem
                                                     key={group.id}
                                                     onClick={() => setActiveGroup(group)}
-                                                    className={`cursor-pointer flex items-center justify-between rounded-xl mb-1 ${activeGroup?.id === group.id ? 'bg-blue-50 text-blue-700 font-bold' : ''}`}
+                                                    className={`cursor-pointer flex items-center justify-between rounded-xl mb-1 ${activeGroup?.id === group.id ? 'bg-[#D2E3FC] text-[#174EA6] font-bold' : ''}`}
                                                 >
                                                     <span className="truncate">{group.name}</span>
                                                     {activeGroup?.id === group.id && (
-                                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-600" />
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-[#4285F4]" />
                                                     )}
                                                 </DropdownMenuItem>
                                             ))}
                                         </div>
                                         <DropdownMenuSeparator className="opacity-50" />
                                         <div className="grid grid-cols-2 gap-1 p-1">
-                                            <DropdownMenuItem onClick={() => setIsCreateGroupOpen(true)} className="cursor-pointer gap-2 text-blue-600 focus:text-blue-700 rounded-lg justify-center border border-blue-100 bg-blue-50/30 hover:bg-blue-50">
+                                            <DropdownMenuItem onClick={() => setIsCreateGroupOpen(true)} className="cursor-pointer gap-2 text-[#4285F4] focus:text-[#174EA6] rounded-lg justify-center border border-[#D2E3FC] bg-[#D2E3FC]/30 hover:bg-[#D2E3FC]">
                                                 <Plus className="w-3.5 h-3.5" />
                                                 <span className="text-xs font-bold">New</span>
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => setIsJoinGroupOpen(true)} className="cursor-pointer gap-2 text-blue-600 focus:text-blue-700 rounded-lg justify-center border border-blue-100 bg-blue-50/30 hover:bg-blue-50">
+                                            <DropdownMenuItem onClick={() => setIsJoinGroupOpen(true)} className="cursor-pointer gap-2 text-[#4285F4] focus:text-[#174EA6] rounded-lg justify-center border border-[#D2E3FC] bg-[#D2E3FC]/30 hover:bg-[#D2E3FC]">
                                                 <Hash className="w-3.5 h-3.5" />
                                                 <span className="text-xs font-bold">Join</span>
                                             </DropdownMenuItem>
@@ -491,7 +491,7 @@ export default function HomePage() {
                             {activeGroup && (
                                 <div className="flex items-center gap-2 animate-in fade-in zoom-in-95 self-start sm:self-auto">
                                     <div
-                                        className="flex items-center gap-2 text-sm bg-blue-50/50 px-3 py-1.5 rounded-full border border-blue-100 cursor-pointer hover:border-blue-300 transition-colors group/code"
+                                        className="flex items-center gap-2 text-sm bg-[#D2E3FC]/50 dark:bg-blue-50/10 px-3 py-1.5 rounded-full border border-[#4285F4]/30 cursor-pointer hover:border-[#4285F4] transition-colors group/code"
                                         onClick={() => {
                                             navigator.clipboard.writeText(activeGroup.code);
                                             toast.success('Code copied!', { duration: 2000 });
@@ -606,23 +606,23 @@ export default function HomePage() {
                         ) : (
                             <>
                                 {/* Header Row - Hidden on small mobile */}
-                                <div className="px-4 md:px-8 py-4 bg-muted/20 border-b border-border flex items-center gap-4 md:gap-8">
+                                <div className="px-4 md:px-8 py-4 bg-[#F1F3F4]/50 dark:bg-muted/20 border-b border-[#E8EAED] dark:border-border flex items-center gap-4 md:gap-8">
                                     <div className="w-8 md:w-12 flex justify-center shrink-0">
-                                        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Rank</span>
+                                        <span className="text-[10px] font-black text-[#5F6368] dark:text-muted-foreground uppercase tracking-widest">Rank</span>
                                     </div>
                                     <div className="flex-1 flex items-center gap-4 min-w-0">
                                         <div className="w-12 md:w-14 shrink-0 opacity-0" />
-                                        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">User</span>
+                                        <span className="text-[10px] font-black text-[#5F6368] dark:text-muted-foreground uppercase tracking-widest">User</span>
                                     </div>
                                     <div className="flex gap-4 md:gap-10 items-center shrink-0">
                                         <div className="hidden lg:flex justify-center w-16">
-                                            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Streak</span>
+                                            <span className="text-[10px] font-black text-[#5F6368] dark:text-muted-foreground uppercase tracking-widest">Streak</span>
                                         </div>
                                         <div className="text-right w-16 md:w-24">
-                                            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Score</span>
+                                            <span className="text-[10px] font-black text-[#5F6368] dark:text-muted-foreground uppercase tracking-widest">Score</span>
                                         </div>
                                         <div className="text-right w-16 md:w-24">
-                                            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Today</span>
+                                            <span className="text-[10px] font-black text-[#5F6368] dark:text-muted-foreground uppercase tracking-widest">Today</span>
                                         </div>
                                     </div>
                                 </div>
@@ -688,7 +688,7 @@ export default function HomePage() {
                                     placeholder="What is this group about?"
                                 />
                             </div>
-                            {modalError && <p className="text-sm text-red-500">{modalError}</p>}
+                            {modalError && <p className="text-sm text-[#EA4335]">{modalError}</p>}
                         </div>
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={() => setIsCreateGroupOpen(false)}>
@@ -732,7 +732,7 @@ export default function HomePage() {
                                     className="font-mono uppercase tracking-widest text-center text-lg"
                                 />
                             </div>
-                            {modalError && <p className="text-sm text-red-500">{modalError}</p>}
+                            {modalError && <p className="text-sm text-[#EA4335]">{modalError}</p>}
                         </div>
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={() => setIsJoinGroupOpen(false)}>

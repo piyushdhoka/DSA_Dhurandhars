@@ -30,47 +30,45 @@ export default function Home() {
     )
   }
 
-  const particleColor = resolvedTheme === 'dark' ? '#ffffff' : '#000000'
+  const particleColor = '#4285F4'
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-background flex flex-col">
       {/* Particle Background */}
       <Particles
         className="fixed inset-0 pointer-events-none"
-        quantity={60}
+        quantity={150}
         color={particleColor}
-        size={0.4}
-        staticity={70}
-        ease={70}
+        size={1.1}
+        staticity={50}
+        ease={60}
       />
 
-      {/* Sticky Banner - Always Blue */}
-      <div className="bg-blue-600 text-white shrink-0 py-2 relative z-50">
-        <div className="flex items-center justify-center gap-4 w-full px-4">
-          <Github className="w-5 h-5 text-blue-100 hidden sm:block" />
-          <p className="text-sm font-semibold tracking-tight">
-            Help us grow! <span className="hidden sm:inline">Star our repo on GitHub</span>
-          </p>
-          <a
-            href="https://github.com/piyushdhoka/DSA_Grinders"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 py-1 px-3 bg-white text-blue-600 hover:bg-blue-50 rounded-full transition-colors font-bold text-xs active:scale-95"
-          >
-            <Star className="w-3 h-3 fill-current" />
-            <span>Star</span>
-          </a>
+      {/* Floating GitHub Star Button */}
+      <a
+        href="https://github.com/piyushdhoka/DSA_Grinders"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-6 right-6 z-50 group flex items-center bg-white dark:bg-[#202124] border border-[#E8EAED] dark:border-[#5F6368] rounded-full shadow-[0_1px_2px_0_rgba(60,64,67,0.3),0_1px_3px_1px_rgba(60,64,67,0.15)] hover:shadow-[0_4px_6px_-1px_rgba(60,64,67,0.3),0_2px_4px_-1px_rgba(60,64,67,0.15)] transition-all duration-300 hover:pr-4"
+      >
+        <div className="flex items-center justify-center w-12 h-12 shrink-0">
+          <Github className="w-5 h-5 text-[#202124] dark:text-white" />
         </div>
-      </div>
+        <div className="max-w-0 group-hover:max-w-xs overflow-hidden whitespace-nowrap transition-all duration-300 ease-in-out">
+          <span className="text-sm font-medium text-[#202124] dark:text-white">
+            Help us grow! Star our repo on GitHub
+          </span>
+        </div>
+      </a>
 
       {/* Navigation */}
-      <nav className="shrink-0 z-50 bg-background border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 md:px-10 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="relative w-8 h-8 md:w-10 md:h-10">
+      <nav className="shrink-0 z-50 bg-white/95 dark:bg-black/95 backdrop-blur-lg">
+        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="relative w-10 h-10">
               <Image src="/logo.png" alt="DSA Grinders" width={40} height={40} className="object-contain" priority />
             </div>
-            <span className="text-base md:text-lg font-semibold text-foreground">DSA Grinders</span>
+            <span className="text-xl font-semibold text-[#202124] dark:text-white">DSA Grinders</span>
           </div>
           <AnimatedThemeToggler />
         </div>
